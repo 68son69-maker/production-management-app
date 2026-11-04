@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tính số ngày hoàn thành đơn hàng</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 30px; }
+  table { border-collapse: collapse; width: 100%; max-width: 420px; }
+  td, th { border: 1px solid #000; padding: 6px 8px; text-align: center; font-size: 15px; }
+  th { font-family: "Times New Roman", serif; font-size: 26px; padding: 10px; }
+  .label { text-align: left; }
+  .unit { width: 80px; text-align: left; }
+  input { width: 100%; box-sizing: border-box; text-align: center; font-size: 16px; border: none; padding: 6px; background: transparent; }
+  .yellow { background: #ffff00; }
+  .green { background: #c4d03c; }
+  .blue { background: #00b0f0; font-size: 22px; font-weight: bold; }
+  .result { font-size: 22px; }
+  #days { font-size: 28px; }
+</style>
+</head>
+<body>
+
+<!-- BẢNG 1: Số ngày hoàn thành đơn hàng -->
+<table>
+  <tr><th colspan="3">Tính số ngày có thể hoàn thành đơn hàng</th></tr>
+  <tr>
+    <td class="label">Số phút của đơn hàng</td>
+    <td class="green"><input id="orderMinutes" type="number" value="4100" min="0"></td>
+    <td class="unit">Phút</td>
+  </tr>
+  <tr><td colspan="3" style="border:none;height:10px"></td></tr>
+  <tr>
+    <td class="label" style="height:150px">Số ngày cần để hoàn thành đơn hàng<br>(lấy tổng số phút của đơn hàng cần sản xuất / số phút sản xuất được mỗi ngày)</td>
+    <td class="blue" id="days">0</td>
+    <td class="unit">Ngày</td>
+  </tr>
+</table>
+
+<!-- BẢNG 2: Số phút sản xuất -->
+<table>
+  <tr><th colspan="2">Tính số phút sản xuất</th></tr>
+  <tr><td colspan="2">Thời gian làm việc của mỗi operator/ mỗi ca</td></tr>
+  <tr><td class="yellow"><input id="shiftMinutes" type="number" value="480" min="0"></td><td class="unit" style="border:none"></td></tr>
+  <tr><td colspan="2">Số ca bố trí chạy hàng / mỗi ngày</td></tr>
+  <tr><td class="yellow"><input id="shifts" type="number" value="2" min="0"></td><td class="unit">Ca</td></tr>
+  <tr><td colspan="2">Số operator (board) có thể bố trí mỗi ca</td></tr>
+  <tr><td class="yellow"><input id="operators" type="number" value="2" min="0"></td><td class="unit">Operator</td></tr>
+  <tr><td colspan="2">Hiệu suất của operator</td></tr>
+  <tr><td class="yellow"><input id="efficiency" type="number" value="40" min="0" max="100"></td><td class="unit">%</td></tr>
+  <tr><td colspan="2">Số phút sản xuất được mỗi ngày</td></tr>
+  <tr><td class="blue" id="perDay">0</td><td class="unit">Phút</td></tr>
+</table>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const inputs = ['orderMinutes','shiftMinutes','shifts','operators','efficiency'];
+
+  function calc() {
+    const v = id => parseFloat($(id).value) || 0;
+    // Số phút sản xuất mỗi ngày
+    const perDay = v('shiftMinutes') * v('shifts') * v('operators') * v('efficiency') / 100;
+    $('perDay').textContent = perDay.toLocaleString('vi-VN', { maximumFractionDigits: 2 });
+    // Số ngày hoàn thành đơn hàng
+    const days = perDay > 0 ? v('orderMinutes') / perDay : 0;
+    $('days').textContent = perDay > 0 ? days.toLocaleString('vi-VN', { maximumFractionDigits: 2 }) : '—';
+  }
+
+  inputs.forEach(id => $(id).addEventListener('input', calc));
+  calc();
+</script>
+</body>
+</html>
