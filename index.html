@@ -2,72 +2,898 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tính số ngày hoàn thành đơn hàng</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<meta name="color-scheme" content="dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Production">
+<title>Production Management – Wire Harness</title>
 <style>
-  body { font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 30px; }
-  table { border-collapse: collapse; width: 100%; max-width: 420px; }
-  td, th { border: 1px solid #000; padding: 6px 8px; text-align: center; font-size: 15px; }
-  th { font-family: "Times New Roman", serif; font-size: 26px; padding: 10px; }
-  .label { text-align: left; }
-  .unit { width: 80px; text-align: left; }
-  input { width: 100%; box-sizing: border-box; text-align: center; font-size: 16px; border: none; padding: 6px; background: transparent; }
-  .yellow { background: #ffff00; }
-  .green { background: #c4d03c; }
-  .blue { background: #00b0f0; font-size: 22px; font-weight: bold; }
-  .result { font-size: 22px; }
-  #days { font-size: 28px; }
+:root{--bg:#0b1220;--line:#263951;--text:#edf4ff;--muted:#9aacc4;--blue:#2878e5;--green:#21b783;--red:#ef626b;--radius:16px;
+font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg);-webkit-text-size-adjust:100%;text-size-adjust:100%;height:100%}
+body{margin:0;background:radial-gradient(circle at 50% 0%,#19365d 0%,transparent 60%),var(--bg);color:var(--text);
+min-height:100vh;min-height:100dvh;overscroll-behavior-y:none;touch-action:manipulation;
+padding:calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(92px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left))}
+button,input,select{font:inherit}
+button{cursor:pointer;border:none;touch-action:manipulation}
+.app{max-width:600px;margin:auto}
+.top{display:flex;align-items:center;gap:12px;padding:8px 4px 16px}
+.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(145deg,#3d91ff,#1554b4);display:grid;place-items:center;font-weight:900;font-size:14px;box-shadow:0 6px 16px rgba(20,87,173,.4)}
+.brand{flex:1;min-width:0}.brand b{font-size:14px;letter-spacing:.5px;display:block}
+.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:1px;margin-top:2px}
+.status{font-size:11px;color:#91e3c4;background:#153b35;border:1px solid #286b5d;padding:8px 10px;min-height:36px;border-radius:99px;white-space:nowrap}
+.status.warn{color:#ffd88a;background:#3b3115;border-color:#6b5a28}
+.page{display:none}.page.active{display:block;animation:fade .2s ease}
+@keyframes fade{from{opacity:.4;transform:translateY(6px)}to{opacity:1;transform:none}}
+.heading{margin:4px 0 14px}.heading h1{font-size:22px;margin:0 0 4px}.heading p{margin:0;color:var(--muted);font-size:13px}
+.card{background:linear-gradient(145deg,#16263c,#111d2e);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:12px 0;box-shadow:0 8px 20px rgba(0,0,0,.15)}
+.card h2{font-size:15px;margin:0 0 12px}
+.field{margin:10px 0}.field label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+.field input,.field select{width:100%;background:#0d1828;border:1px solid #314762;border-radius:12px;padding:11px 12px;color:var(--text);outline:none;font-size:16px;min-height:48px;-webkit-appearance:none;appearance:none}
+.field select{background-image:linear-gradient(45deg,transparent 50%,#9aacc4 50%),linear-gradient(135deg,#9aacc4 50%,transparent 50%);background-position:calc(100% - 20px) 21px,calc(100% - 14px) 21px;background-size:6px 6px;background-repeat:no-repeat;padding-right:34px}
+.field input:focus,.field select:focus{border-color:#4c9aff;box-shadow:0 0 0 3px rgba(40,120,229,.25)}
+.field input[readonly]{opacity:.8}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.result{background:linear-gradient(135deg,#173e6e,#13488f);border:1px solid #397cc5;border-radius:14px;padding:14px;margin-top:12px}
+.result .muted{font-size:12px;color:#c2d9f7}.result strong{font-size:24px;display:block;margin-top:4px}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.result-item{background:rgba(13,27,45,.6);border:1px solid rgba(41,65,95,.8);border-radius:10px;padding:10px;min-width:0}
+.result-item span{font-size:11px;color:var(--muted);display:block}.result-item b{font-size:16px;display:block;margin-top:4px;overflow-wrap:anywhere}
+.btn{border-radius:12px;background:var(--blue);color:#fff;font-weight:700;padding:12px 16px;min-height:48px;font-size:15px;width:100%}
+.btn:active{filter:brightness(.85);transform:scale(.99)}
+.btn.secondary{background:#263b56;border:1px solid #3b5575}
+.btn-del{background:#71313c;color:#fff;padding:8px 12px;min-height:36px;border-radius:8px;font-size:12px}
+.hint{font-size:12px;color:var(--muted);line-height:1.4;margin:8px 0}
+.msg{font-size:13px;margin-top:8px;min-height:18px;color:#91e3c4}.msg.err{color:#ff9ca2}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:10px;border-radius:10px;border:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:480px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}
+th{background:#1b3554;color:#dceaff;white-space:nowrap}
+.empty{text-align:center;color:var(--muted);padding:15px}
+.chart-container{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.chart-bar-item{background:rgba(13,27,45,.6);border:1px solid var(--line);padding:10px;border-radius:8px}
+.chart-info{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;margin-bottom:6px}
+.bar-bg{width:100%;background:#0d1828;height:8px;border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;background:var(--green);border-radius:4px;transition:width .3s}
+.bar-fill.low{background:#f2b84b}
+.plot{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:6px 0 4px}
+.plotin{position:relative;display:flex;gap:10px;min-width:100%}
+.cw{flex:1 0 66px;display:flex;flex-direction:column;align-items:center;min-width:0}
+.cb{height:170px;width:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;border-bottom:2px solid #314762}
+.bar{width:70%;max-width:54px;min-height:3px;border-radius:8px 8px 0 0;transition:height .35s}
+.bar.ok{background:linear-gradient(180deg,#34d3a0,#1a9b6f)}.bar.bad{background:linear-gradient(180deg,#ff7d85,#d24851)}
+.val{text-align:center;line-height:1.15;margin-bottom:4px}
+.val b{display:block;font-size:15px}.val small{display:block;font-size:10.5px;color:var(--muted)}
+.val.ok b{color:#4fe0b0}.val.bad b{color:#ff8f96}
+.lbl{text-align:center;margin-top:6px;width:100%}
+.lbl b{display:block;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbl small{display:inline-block;margin-top:3px;font-size:10px;color:#cfe2ff;background:#1b3554;border-radius:6px;padding:1px 6px}
+.thrline{position:absolute;left:0;right:0;top:0;height:170px;pointer-events:none}
+.thrline i{position:absolute;left:0;right:0;border-top:2px dashed rgba(242,184,75,.8)}
+.thrline span{position:absolute;right:0;top:-17px;font-size:10px;color:#f2b84b;font-style:normal}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin:2px 0 6px;align-items:center}
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:middle}
+.dot.ok{background:var(--green)}.dot.bad{background:var(--red)}
+.cdate{color:var(--muted);font-weight:400;font-size:12px}
+.result.good{background:linear-gradient(135deg,#0f4a3a,#12694f);border-color:#2fae86}
+.result.bad{background:linear-gradient(135deg,#5a2029,#7d2a35);border-color:#d0525d}
+.cw.sm{flex:0 0 46px}.sm .val b{font-size:11px}.sm .val small{display:none}.sm .lbl small{display:none}
+td.ok{color:#4fe0b0;font-weight:700}td.bad{color:#ff8f96;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.chip{display:flex;align-items:center;gap:8px;background:#1b3554;border:1px solid #3b5575;border-radius:99px;padding:5px 5px 5px 12px;font-size:12.5px}
+.chip button{background:#71313c;color:#fff;border-radius:50%;width:28px;height:28px;font-size:15px;line-height:1}
+.par{margin:10px 0}.par-h{display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-bottom:4px;flex-wrap:wrap}
+.par-h span{color:var(--muted)}.par-h em{font-style:normal;color:#cfe2ff}
+.bar-fill.hot{background:var(--red)}
+.tc{border-top:3px solid var(--ac)}
+.tc>h2{color:var(--ac)}
+@supports (background:color-mix(in srgb,red,blue)){.tc{background:linear-gradient(145deg,color-mix(in srgb,var(--ac) 11%,#16263c),#111d2e)}}
+.t-sum{--ac:#5aa2ff}.t-perf{--ac:#2fc894}.t-def{--ac:#f08a4b}.t-ppm{--ac:#a78bfa}.t-list{--ac:#5eb8cf}
+.t-rep{--ac:#4cc2f0}.t-cap{--ac:#e0b341}.t-set{--ac:#8fa3bd}
+.nav [data-page="dashboard"]{--tc:#5aa2ff}.nav [data-page="report"]{--tc:#4cc2f0}.nav [data-page="perf"]{--tc:#e0b341}.nav [data-page="database"]{--tc:#8fa3bd}
+.nav button.active[data-page]{color:var(--tc);box-shadow:inset 0 2px 0 var(--tc)}
+.bar.mid{background:linear-gradient(180deg,#f7cb73,#c9921f)}.val.mid b{color:#f2b84b}
+.lbl small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bottom{position:fixed;z-index:100;bottom:0;left:0;right:0;padding:6px calc(6px + env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) calc(6px + env(safe-area-inset-left));background:rgba(12,21,36,.95);border-top:1px solid var(--line);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);display:flex;justify-content:center}
+.nav{width:100%;max-width:580px;display:grid;grid-template-columns:repeat(4,1fr);gap:2px}
+.nav button{background:transparent;color:#8c9fb8;min-height:52px;padding:4px 0;border-radius:10px;font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:.15s}
+.nav button span{display:block;font-size:19px;margin-bottom:2px;line-height:1}
+.nav button.active{background:#1b3554;color:#fff;font-weight:600}
+@media (max-width:360px){.row2{grid-template-columns:1fr}.nav button{font-size:9px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
+<main class="app">
+<header class="top">
+  <div class="logo">PM</div>
+  <div class="brand"><b>PRODUCTION MANAGEMENT</b><small>WIRE HARNESS · CAPACITY &amp; EFFICIENCY</small></div>
+  <button class="status" id="syncBadge" type="button" title="Bấm để đồng bộ">Đang tải…</button>
+</header>
 
-<!-- BẢNG 1: Số ngày hoàn thành đơn hàng -->
-<table>
-  <tr><th colspan="3">Tính số ngày có thể hoàn thành đơn hàng</th></tr>
-  <tr>
-    <td class="label">Số phút của đơn hàng</td>
-    <td class="green"><input id="orderMinutes" type="number" value="4100" min="0"></td>
-    <td class="unit">Phút</td>
-  </tr>
-  <tr><td colspan="3" style="border:none;height:10px"></td></tr>
-  <tr>
-    <td class="label" style="height:150px">Số ngày cần để hoàn thành đơn hàng<br>(lấy tổng số phút của đơn hàng cần sản xuất / số phút sản xuất được mỗi ngày)</td>
-    <td class="blue" id="days">0</td>
-    <td class="unit">Ngày</td>
-  </tr>
-</table>
+<section id="dashboard" class="page active">
+  <div class="heading"><h1>Dashboard Tổng hợp</h1><p>Hiệu suất, chất lượng theo khu vực Team Lead</p></div>
+  <div class="card tc t-sum">
+    <div class="row2">
+      <div class="field"><label for="filterDate">Lọc theo ngày</label><input id="filterDate" type="date"></div>
+      <div class="field"><label for="filterLine">Lọc theo Line</label>
+        <select id="filterLine"><option value="">Tất cả Line</option><option value="EAP">EAP</option><option value="USL">USL</option></select></div>
+    </div>
+    <button class="btn secondary" id="btnAllDays" type="button" style="min-height:40px;margin-top:2px">Xem tất cả các ngày</button>
+    <div class="result-grid">
+      <div class="result-item"><span>Tổng kế hoạch</span><b id="dashPlan">0 bộ</b></div>
+      <div class="result-item"><span>Tổng thực tế</span><b id="dashActual">0 bộ</b></div>
+      <div class="result-item"><span>Tỷ lệ hoàn thành</span><b id="dashRate">0%</b></div>
+      <div class="result-item"><span>Tổng lỗi (Defects)</span><b id="dashDefects" style="color:var(--red)">0</b></div>
+    </div>
+  </div>
+  <div class="card tc t-perf"><h2>📊 Hiệu suất theo Team Lead <span class="cdate">(<span class="cd"></span>)</span></h2>
+    <div class="field"><label for="passThr">Ngưỡng đạt hiệu suất (%)</label><input id="passThr" type="number" inputmode="decimal" min="0" value="100"></div>
+    <div class="legend"><span><i class="dot ok"></i>Đạt</span><span><i class="dot bad"></i>Chưa đạt</span></div>
+    <div class="plot" id="perfChart"></div></div>
+  <div class="card tc t-def"><h2>⚠️ Số lỗi theo Team Lead <span class="cdate">(<span class="cd"></span>)</span></h2>
+    <div class="legend"><span><i class="dot ok"></i>Không lỗi</span><span><i class="dot bad"></i>Có lỗi</span></div>
+    <div class="plot" id="defChart"></div></div>
+  <div class="card tc t-def"><h2>🔎 Thống kê lỗi theo mã lỗi <span class="cdate">(<span id="parLabel"></span>)</span></h2>
+    <div class="row2">
+      <div class="field"><label for="parScope">Xem theo</label><select id="parScope"><option value="day">Ngày</option><option value="week">Tuần</option><option value="month" selected>Tháng</option><option value="year">Năm</option><option value="all">Tất cả</option></select></div>
+      <div class="field"><label for="parDate">Mốc thời gian</label><input id="parDate" type="date"></div>
+    </div>
+    <div class="row2" style="margin-bottom:6px"><button class="btn secondary" id="parPrev" type="button" style="min-height:40px">‹ Trước</button><button class="btn secondary" id="parNext" type="button" style="min-height:40px">Sau ›</button></div>
+    <div id="parChart"></div>
+  </div>
+  <div class="card tc t-def"><h2>👷 Lỗi theo nhân viên <span class="cdate">(<span id="empLabel"></span>)</span></h2><div id="empChart"></div></div>
+  <div class="card tc t-ppm"><h2>🎯 PPM chất lượng theo tháng <span class="cdate">(<span id="ppmLineTxt"></span>)</span></h2>
+    <div class="row2">
+      <div class="field"><label for="ppmMonth">Tháng</label><input id="ppmMonth" type="month"></div>
+      <div class="field"><label for="ppmTarget">PPM target / tháng</label><input id="ppmTarget" type="number" inputmode="decimal" min="0" value="600"></div>
+    </div>
+    <div class="result" id="ppmBox"><div class="muted">PPM lũy kế đến thời điểm hiện tại</div><strong id="ppmNow">0</strong><div class="muted" id="ppmStatus" style="margin-top:6px;font-size:13px">—</div></div>
+    <div class="result-grid">
+      <div class="result-item"><span>Sản lượng lũy kế</span><b id="ppmOut">0 bộ</b></div>
+      <div class="result-item"><span>Lỗi lũy kế</span><b id="ppmDef">0</b></div>
+      <div class="result-item"><span>Lỗi tối đa cho phép</span><b id="ppmAllow">0</b></div>
+      <div class="result-item"><span>Còn dư / vượt</span><b id="ppmMargin">0</b></div>
+    </div>
+    <h3 style="font-size:13px;margin:14px 0 4px">PPM lũy kế theo ngày</h3>
+    <div class="legend"><span><i class="dot ok"></i>Trong target</span><span><i class="dot bad"></i>Vượt target</span></div>
+    <div class="plot" id="ppmChart"></div>
+    <div class="table-wrap"><table style="min-width:420px"><thead><tr><th>Ngày</th><th>Sản lượng</th><th>Lỗi</th><th>PPM ngày</th><th>PPM lũy kế</th></tr></thead><tbody id="ppmBody"></tbody></table></div>
+    <p class="hint">PPM = (số lỗi ÷ sản lượng thực tế) × 1.000.000. Lũy kế tính từ ngày 1 đến từng ngày trong tháng. Có áp dụng bộ lọc Line ở trên.</p>
+  </div>
+  <div class="card tc t-list"><h2>Chi tiết báo cáo sản xuất</h2>
+    <div class="table-wrap"><table><thead><tr><th>Ngày</th><th>Ca</th><th>Line</th><th>FPNR</th><th>Team Lead</th><th>KH</th><th>Thực tế</th><th>Lỗi</th><th></th></tr></thead><tbody id="reportTableBody"></tbody></table></div>
+    <button class="btn secondary" id="btnExport" type="button" style="margin-top:10px">⬇️ Xuất CSV theo bộ lọc hiện tại</button>
+    <p class="hint">File gồm từng dòng lỗi: ngày, ca, FPNR, nhân viên, mã lỗi, số lượng. Bấm "Xem tất cả các ngày" để xuất toàn bộ.</p>
+  </div>
+</section>
 
-<!-- BẢNG 2: Số phút sản xuất -->
-<table>
-  <tr><th colspan="2">Tính số phút sản xuất</th></tr>
-  <tr><td colspan="2">Thời gian làm việc của mỗi operator/ mỗi ca</td></tr>
-  <tr><td class="yellow"><input id="shiftMinutes" type="number" value="480" min="0"></td><td class="unit" style="border:none"></td></tr>
-  <tr><td colspan="2">Số ca bố trí chạy hàng / mỗi ngày</td></tr>
-  <tr><td class="yellow"><input id="shifts" type="number" value="2" min="0"></td><td class="unit">Ca</td></tr>
-  <tr><td colspan="2">Số operator (board) có thể bố trí mỗi ca</td></tr>
-  <tr><td class="yellow"><input id="operators" type="number" value="2" min="0"></td><td class="unit">Operator</td></tr>
-  <tr><td colspan="2">Hiệu suất của operator</td></tr>
-  <tr><td class="yellow"><input id="efficiency" type="number" value="40" min="0" max="100"></td><td class="unit">%</td></tr>
-  <tr><td colspan="2">Số phút sản xuất được mỗi ngày</td></tr>
-  <tr><td class="blue" id="perDay">0</td><td class="unit">Phút</td></tr>
-</table>
+<section id="report" class="page">
+  <div class="heading"><h1>Nhập báo cáo hàng ngày</h1><p>Kế hoạch &amp; sản lượng theo từng bộ dây (FPNR), lỗi theo mã lỗi</p></div>
+  <div class="card tc t-rep"><h2>1. Ca &amp; bộ dây</h2>
+    <div class="row2">
+      <div class="field"><label for="repDate">Ngày báo cáo</label><input id="repDate" type="date"></div>
+      <div class="field"><label for="repShift">Ca làm việc</label><select id="repShift"><option>Ca 1</option><option>Ca 2</option><option>Ca 3</option></select></div>
+      <div class="field"><label for="repLine">Lọc Line (hiện FPNR của Line)</label><select id="repLine"><option>EAP</option><option>USL</option></select></div>
+      <div class="field"><label for="repUser">Team Lead</label><select id="repUser"></select></div>
+    </div>
+    <div class="field"><label for="repFpnr">Bộ dây FPNR <span id="fpnrCount" style="color:#cfe2ff"></span></label><select id="repFpnr"></select></div>
+    <div class="hint" id="repFpnrInfo"></div>
+    <div class="row2">
+      <div class="field"><label for="repPlan">Kế hoạch chạy (bộ)</label><input id="repPlan" type="number" inputmode="numeric" min="0" value="100"></div>
+      <div class="field"><label for="repActual">Thực tế (bộ)</label><input id="repActual" type="number" inputmode="numeric" min="0" value="95"></div>
+    </div>
+    <h3 style="font-size:13px;margin:14px 0 4px">Sản lượng theo nhân viên (để tính hiệu suất từng người)</h3>
+    <div class="field"><label for="opFilter">Nhân viên chạy bộ dây</label>
+      <input id="opFilter" type="search" placeholder="Gõ ID hoặc tên để lọc…" autocomplete="off" autocapitalize="off" style="margin-bottom:8px"><select id="opEmp"></select></div>
+    <div class="row2">
+      <div class="field"><label for="opQty">Sản lượng (bộ)</label><input id="opQty" type="number" inputmode="numeric" min="1" value="1"></div>
+      <div class="field"><label for="opMin">Phút làm việc</label><input id="opMin" type="number" inputmode="decimal" min="1" value="480"></div>
+    </div>
+    <button class="btn secondary" id="btnAddOp" type="button">+ Thêm nhân viên</button>
+    <div class="chips" id="opList"></div>
+    <div class="hint">Khi có nhân viên, ô "Thực tế" tự cộng theo tổng sản lượng. Hiệu suất = sản lượng × phút chuẩn (TOTAL MIN) ÷ phút làm việc. Bỏ trống nếu chỉ báo cáo theo bộ dây.</div>
+  </div>
+  <div class="card tc t-rep"><h2>2. Lỗi theo mã lỗi</h2>
+    <div class="field"><label for="empFilter">Nhân viên gây lỗi <span id="empCount" style="color:#cfe2ff"></span></label>
+      <input id="empFilter" type="search" placeholder="Gõ ID hoặc tên để lọc…" autocomplete="off" autocapitalize="off" style="margin-bottom:8px"><select id="defEmp"></select></div>
+    <div class="field"><label for="defCode">Mã lỗi</label><select id="defCode"></select></div>
+    <div class="row2">
+      <div class="field"><label for="defQty">Số lượng</label><input id="defQty" type="number" inputmode="numeric" min="1" value="1"></div>
+      <div class="field"><label>&nbsp;</label><button class="btn secondary" id="btnAddDef" type="button">+ Thêm lỗi</button></div>
+    </div>
+    <div class="chips" id="defList"></div>
+    <div class="hint">Tổng lỗi của bộ dây này: <b id="defTotal">0</b></div>
+    <button class="btn" id="btnSaveReport" type="button" style="margin-top:6px">Lưu báo cáo</button>
+    <div id="repMsg" class="msg" role="status"></div>
+  </div>
+</section>
+
+<section id="perf" class="page">
+  <div class="heading"><h1>Năng lực &amp; Hiệu suất</h1><p>Tính số ngày hoàn thành đơn hàng và sản lượng mục tiêu theo FPNR</p></div>
+  <div class="card tc t-cap"><h2>⏱️ Năng lực: thông tin đơn hàng</h2>
+    <div class="field"><label for="orderMinutes">Tổng thời gian chuẩn đơn hàng (phút)</label><input id="orderMinutes" type="number" inputmode="decimal" min="0" step="0.01" value="4100"></div>
+    <div class="row2">
+      <div class="field"><label for="shiftMinutes">Thời gian / ca (phút)</label><input id="shiftMinutes" type="number" inputmode="decimal" min="0" value="480"></div>
+      <div class="field"><label for="shifts">Số ca / ngày</label><input id="shifts" type="number" inputmode="numeric" min="0" value="2"></div>
+      <div class="field"><label for="operators">Operator / ca</label><input id="operators" type="number" inputmode="numeric" min="0" value="2"></div>
+      <div class="field"><label for="efficiency">Hiệu suất mục tiêu (%)</label><input id="efficiency" type="number" inputmode="decimal" min="0" max="100" value="40"></div>
+    </div>
+    <div class="result"><div class="muted">Số phút chuẩn sản xuất mỗi ngày</div><strong id="perDay">0 phút</strong>
+      <div class="muted" style="margin-top:10px">Số ngày cần để hoàn thành</div><strong id="days">—</strong></div>
+  </div>
+  <div class="card tc t-cap"><h2>📊 Hiệu suất: chọn bộ dây và tiêu chuẩn</h2>
+    <div class="field"><label for="sel">Mã FPNR / Tên bộ dây</label><select id="sel"></select></div>
+    <div class="row2">
+      <div class="field"><label for="pLine">Line / Build Group</label><input id="pLine" readonly value="—"></div>
+      <div class="field"><label for="basis">Loại phút tiêu chuẩn</label><select id="basis"><option value="pst">PST</option><option value="asm">ASSEMBLY BOARD</option><option value="total" selected>TOTAL MIN</option></select></div>
+    </div>
+    <div class="result"><div class="muted">Thời gian chuẩn cho 1 bộ (100%)</div><strong id="std">— phút</strong><div class="muted" id="stdDetail" style="margin-top:6px"></div></div>
+  </div>
+  <div class="card tc t-cap"><h2>📊 Hiệu suất: thông số sản xuất chuyền</h2>
+    <div class="row2">
+      <div class="field"><label for="work">Thời gian làm việc (phút)</label><input id="work" type="number" inputmode="decimal" min="0" value="480"></div>
+      <div class="field"><label for="eff2">Hiệu suất muốn chạy (%)</label><input id="eff2" type="number" inputmode="decimal" min="0" max="300" value="30"></div>
+      <div class="field"><label for="people">Số người trên chuyền</label><input id="people" type="number" inputmode="numeric" min="1" value="1"></div>
+      <div class="field"><label>Đơn vị tính</label><input value="Bộ dây / ca" readonly></div>
+    </div>
+    <div class="result"><div class="muted">Số bộ cần chạy để đạt mục tiêu</div><strong id="sets">0 bộ</strong>
+      <div class="muted" style="margin-top:6px">Số bộ chính xác: <b id="setsExact">0</b></div></div>
+    <div class="result-grid">
+      <div class="result-item"><span>Phút chuẩn cần đạt</span><b id="needStd">0</b></div>
+      <div class="result-item"><span>Hiệu suất thực đạt</span><b id="effReal">0%</b></div>
+      <div class="result-item"><span>Cycle time / bộ</span><b id="ctSec">—</b></div>
+      <div class="result-item"><span>Cycle time</span><b id="ctMin">—</b></div>
+      <div class="result-item"><span>Chuẩn 1 công đoạn</span><b id="stationStd">—</b></div>
+      <div class="result-item"><span>Thời gian chuẩn</span><b id="stdAgain">—</b></div>
+    </div>
+  </div>
+</section>
+
+<section id="database" class="page">
+  <div class="heading"><h1>Cấp quyền &amp; Cài đặt</h1><p>Quản lý Team Lead và Google Sheets</p></div>
+  <div class="card tc t-set"><h2>Liên kết Google Sheets</h2>
+    <p class="hint">Dữ liệu FPNR được đồng bộ từ Google Sheets, có lưu bản sao để dùng khi mất mạng.</p>
+    <button class="btn" id="btnSync" type="button">Đồng bộ dữ liệu Sheets</button>
+  </div>
+  <div class="card tc t-set"><h2>Danh mục mã lỗi (Google Sheets)</h2>
+    <p class="hint">Tạo một tab mã lỗi với 2 cột: <b>MÃ LỖI</b> và <b>MÔ TẢ</b>. Vào Tệp → Chia sẻ → Xuất bản lên web, chọn tab đó, định dạng CSV, rồi dán link vào đây.</p>
+    <div class="field"><label for="defUrl">Link CSV mã lỗi</label><input id="defUrl" type="url" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?gid=...&output=csv"></div>
+    <button class="btn secondary" id="btnDefSave" type="button">Lưu &amp; đồng bộ mã lỗi</button>
+    <div id="defMsg" class="msg" role="status"></div>
+    <p class="hint" id="defCount"></p>
+  </div>
+  <div class="card tc t-set"><h2>Đẩy dữ liệu về Google Sheets của Admin</h2>
+    <p class="hint">Dán link Web App (Apps Script) và mã bảo vệ. Báo cáo được gửi ngay khi lưu, tự thử lại khi có mạng và mỗi giờ khi app đang mở.</p>
+    <div class="field"><label for="pushUrl">Link Web App (kết thúc bằng /exec)</label><input id="pushUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec"></div>
+    <div class="field"><label for="pushToken">Mã bảo vệ</label><input id="pushToken" type="password" autocomplete="off" placeholder="Trùng với TOKEN trong Apps Script"></div>
+    <button class="btn secondary" id="btnPushSave" type="button">Lưu &amp; gửi thử</button>
+    <button class="btn secondary" id="btnPushAll" type="button" style="margin-top:8px">Gửi lại toàn bộ dữ liệu trên máy này</button>
+    <div id="pushMsg" class="msg" role="status"></div>
+    <p class="hint" id="pushInfo"></p>
+  </div>
+  <div class="card tc t-set"><h2>Danh sách nhân viên (Google Sheets)</h2>
+    <p class="hint">App chỉ lấy cột <b>ID</b> và <b>HỌ VÀ TÊN</b>; địa chỉ, số điện thoại… không được đọc hay lưu.</p>
+    <div class="field"><label for="empUrl">Link CSV nhân viên</label><input id="empUrl" type="url" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"></div>
+    <button class="btn secondary" id="btnEmpSave" type="button">Lưu &amp; đồng bộ nhân viên</button>
+    <div id="empMsg" class="msg" role="status"></div>
+    <p class="hint" id="empInfo"></p>
+  </div>
+  <div class="card tc t-set"><h2>Thêm Team Lead quản lý khu vực</h2>
+    <div class="field"><label for="newUsername">Tên tài khoản</label><input id="newUsername" type="text" autocomplete="off" autocapitalize="off" placeholder="Ví dụ: TeamLead_A"></div>
+    <div class="field"><label for="newPassword">Mật khẩu</label><input id="newPassword" type="password" autocomplete="new-password" placeholder="Nhập mật khẩu"></div>
+    <button class="btn secondary" id="btnAddAccount" type="button">Thêm Team Lead</button>
+    <div id="accMsg" class="msg" role="status"></div>
+    <h3 style="font-size:14px;margin:16px 0 8px">Danh sách khu vực quản lý</h3>
+    <div class="table-wrap"><table style="min-width:320px"><thead><tr><th>Tên</th><th>Vai trò</th><th></th></tr></thead><tbody id="accountTableBody"></tbody></table></div>
+  </div>
+</section>
+</main>
+
+<nav class="bottom" aria-label="Điều hướng">
+  <div class="nav">
+    <button class="active" data-page="dashboard" type="button"><span>📈</span>Dashboard</button>
+    <button data-page="report" type="button"><span>📝</span>Nhập liệu</button>
+    <button data-page="perf" type="button"><span>📊</span>Năng suất</button>
+    <button data-page="database" type="button"><span>⚙️</span>Cài đặt</button>
+  </div>
+</nav>
 
 <script>
-  const $ = id => document.getElementById(id);
-  const inputs = ['orderMinutes','shiftMinutes','shifts','operators','efficiency'];
+'use strict';
+const $ = id => document.getElementById(id);
+const num = v => { const n = Number(String(v ?? '').trim().replace(',', '.')); return Number.isFinite(n) ? n : 0; };
+const fmt = (n, d = 2) => Number.isFinite(n) ? n.toLocaleString('vi-VN', { maximumFractionDigits: d }) : '—';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+const localToday = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
-  function calc() {
-    const v = id => parseFloat($(id).value) || 0;
-    // Số phút sản xuất mỗi ngày
-    const perDay = v('shiftMinutes') * v('shifts') * v('operators') * v('efficiency') / 100;
-    $('perDay').textContent = perDay.toLocaleString('vi-VN', { maximumFractionDigits: 2 });
-    // Số ngày hoàn thành đơn hàng
-    const days = perDay > 0 ? v('orderMinutes') / perDay : 0;
-    $('days').textContent = perDay > 0 ? days.toLocaleString('vi-VN', { maximumFractionDigits: 2 }) : '—';
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRuQFRlGNsBSQymmmj--rXgiT7VHIJWy_N5MAOWu528faqXRiIQM-2jm2TO7VRID_KXUv5be_qPd6w7/pub?output=csv';
+const SAMPLE_DATA = [
+  { name: 'ADAPTER MAL', line: 'EAP', group: 'BM4O050C11', fpnr: 'BM4O050111', asm: 6.164, pst: 1.155, total: 7.319 },
+  { name: 'ADAPTER AIRBAG', line: 'EAP', group: 'BM4O055C11', fpnr: 'BM4O055110', asm: 3.725, pst: 0.875, total: 4.6 },
+  { name: 'FRONT BUMPER', line: 'USL', group: 'BM4O120C10', fpnr: 'BM4O120110', asm: 19.267, pst: 2.59, total: 21.857 },
+  { name: 'COCKPIT', line: 'USL', group: 'BM4O230C11', fpnr: 'BM4O230111', asm: 41.169, pst: 5.655, total: 46.824 }
+];
+let data = [];
+
+/* ---------- CSV ---------- */
+function csvRows(t) {
+  const rows = []; let r = [], f = '', q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { r.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && t[i + 1] === '\n') i++; r.push(f); f = ''; rows.push(r); r = []; }
+    else f += c;
+  }
+  if (f || r.length) { r.push(f); rows.push(r); }
+  return rows;
+}
+function parseCSV(text) {
+  const all = csvRows(text);
+  let h = all.findIndex(r => r.some(x => /FPNR/i.test(x)));
+  if (h < 0) h = 0;
+  const head = all[h].map(x => x.trim().toUpperCase());
+  const col = (re, def) => { const i = head.findIndex(x => re.test(x)); return i >= 0 ? i : def; };
+  const iName = col(/NAME|TÊN/, 0), iLine = col(/^LINE$/, 1), iGroup = col(/BUILD/, 2), iFpnr = col(/FPNR/, 3),
+    iAsm = col(/ASSEMBLY/, 4), iPst = col(/^PST$/, 5), iTot = col(/TOTAL/, 6);
+  const out = [];
+  all.slice(h + 1).forEach(c => {
+    c = c.map(s => s.trim());
+    const tot0 = num(c[iTot]);
+    // Sheet có thể hiển thị 0,875 thành "875": nếu một cột lớn hơn TOTAL thì chia 1000 cho đến khi hợp lý
+    const fixv = v => { let n = 0; while (tot0 > 0 && v > tot0 && n++ < 3) v /= 1000; return v; };
+    const asm = fixv(num(c[iAsm])), pst = fixv(num(c[iPst]));
+    if (c.length > Math.max(iAsm, iPst) && c[iFpnr] && (asm > 0 || pst > 0)) {
+      out.push({ name: c[iName] || '', line: (c[iLine] || '').toUpperCase(), group: c[iGroup] || '', fpnr: c[iFpnr],
+        asm, pst, total: num(c[iTot]) || asm + pst });
+    }
+  });
+  return out;
+}
+
+/* ---------- Dữ liệu FPNR ---------- */
+function setData(rows) {
+  if (!rows || !rows.length) return;
+  data = rows;
+  const sel = $('sel'), saved = String(store.get('pm_selected_fpnr_index', 0));
+  const frag = document.createDocumentFragment();
+  rows.forEach((r, i) => { const o = document.createElement('option'); o.value = i; o.textContent = `${r.fpnr} · ${r.name} (${r.line})`; frag.append(o); });
+  sel.replaceChildren(frag);
+  sel.value = sel.querySelector(`option[value="${saved}"]`) ? saved : '0';
+  pick();
+  fillFpnr();
+}
+function pick() {
+  const p = data[Number($('sel').value)] || data[0];
+  if (!p) return;
+  store.set('pm_selected_fpnr_index', $('sel').value);
+  $('pLine').value = `${p.line} · ${p.group}`;
+  $('people').value = p.line === 'EAP' ? 1 : 14;
+  calc2();
+}
+
+/* ---------- Tính toán ---------- */
+function calc1() {
+  const order = Math.max(0, num($('orderMinutes').value)), shift = Math.max(0, num($('shiftMinutes').value)),
+    shifts = Math.max(0, num($('shifts').value)), ops = Math.max(0, num($('operators').value)), eff = Math.max(0, num($('efficiency').value));
+  const per = shift * shifts * ops * eff / 100;
+  $('perDay').textContent = fmt(per) + ' phút';
+  $('days').textContent = per > 0 ? fmt(order / per, 2) + ' ngày' : 'Không đủ dữ liệu';
+}
+function calc2() {
+  const p = data[Number($('sel').value)];
+  if (!p) return;
+  const std = num(p[$('basis').value]), work = Math.max(0, num($('work').value)),
+    eff = Math.max(0, num($('eff2').value)) / 100, people = Math.max(1, num($('people').value));
+  const need = work * eff * people, exact = std > 0 ? need / std : 0, sets = exact > 0 ? Math.ceil(exact) : 0;
+  const real = work > 0 ? sets * std / (work * people) * 100 : 0, ct = sets > 0 ? work * 60 / sets : 0;
+  $('std').textContent = fmt(std, 3) + ' phút';
+  $('stdDetail').textContent = `Assembly Board: ${fmt(p.asm, 3)} · PST: ${fmt(p.pst, 3)} · Total: ${fmt(p.total, 3)}`;
+  $('stdAgain').textContent = fmt(std, 3) + ' phút';
+  $('needStd').textContent = fmt(need);
+  $('setsExact').textContent = fmt(exact, 3);
+  $('sets').textContent = fmt(sets, 0) + ' bộ';
+  $('effReal').textContent = fmt(real, 2) + '%';
+  $('ctSec').textContent = sets ? fmt(ct, 1) + ' giây' : '—';
+  $('ctMin').textContent = sets ? fmt(ct / 60, 3) + ' phút/bộ' : '—';
+  $('stationStd').textContent = fmt(std * 60 / people, 1) + ' giây';
+}
+
+/* ---------- Điều hướng ---------- */
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === id));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('active', b.dataset.page === id));
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('.nav button').forEach(b => b.addEventListener('click', () => showPage(b.dataset.page)));
+
+/* ---------- Báo cáo & Dashboard ---------- */
+let reports = store.get('pm_prod_reports', []).map(r => r.id ? r : { ...r, id: uid() });
+let accounts = store.get('pm_team_accounts', []);
+
+function updateTeamLeadSelect() {
+  const sel = $('repUser'), cur = sel.value;
+  const frag = document.createDocumentFragment();
+  [['Admin', 'Admin (Quản trị viên)'], ...accounts.map(a => [a.user, `${a.user} (Team Lead)`])].forEach(([v, t]) => {
+    const o = document.createElement('option'); o.value = v; o.textContent = t; frag.append(o);
+  });
+  sel.replaceChildren(frag);
+  if (cur && [...sel.options].some(o => o.value === cur)) sel.value = cur;
+}
+
+const DEFAULT_DEFECT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRxgAyvS3IT9xjAMwZoUZzzqd2zLUaUS2e7SFJxR5mu2Sy-3CsEV2QxNm71Pvp1EXZkI9buJUnYZXa9/pub?output=csv';
+const SAMPLE_DEFECTS = [['D01', 'Đứt dây'], ['D02', 'Sai màu dây'], ['D03', 'Sai vị trí cavity'], ['D04', 'Bấm terminal lỗi'], ['D05', 'Thiếu linh kiện'], ['D06', 'Sai chiều dài'], ['D07', 'Lỗi tem/nhãn'], ['D08', 'Hỏng đầu nối'], ['D09', 'Lỗi quấn băng keo'], ['D10', 'Khác']].map(([code, desc]) => ({ code, desc }));
+let defCodes = store.get('pm_defects_cache', null) || SAMPLE_DEFECTS;
+let pendDef = [];
+const defName = c => c === 'N/A' ? 'Chưa phân loại' : (defCodes.find(d => d.code === c) || {}).desc || '';
+
+function parseDefects(text) {
+  const all = csvRows(text);
+  let h = all.findIndex(r => r.some(x => /DEFECT\s*NO|CODE|MÃ/i.test(x)));
+  if (h < 0) h = 0;
+  const head = all[h].map(x => x.trim().toUpperCase());
+  const col = (re, d) => { const i = head.findIndex(x => re.test(x)); return i >= 0 ? i : d; };
+  const iC = col(/DEFECT\s*NO|CODE|MÃ|^NO$/, 0), iVn = col(/\bVN\b|VIỆT|MÔ TẢ/, -1), iEn = col(/\bENG\b|ENGLISH|DESC/, -1);
+  const seen = new Set(), out = [];
+  all.slice(h + 1).forEach(c => {
+    const code = (c[iC] || '').trim();
+    if (!code || seen.has(code)) return;
+    seen.add(code);
+    const vn = iVn >= 0 ? (c[iVn] || '').trim() : '', en = iEn >= 0 ? (c[iEn] || '').trim() : '';
+    out.push({ code, desc: vn || en || (iVn < 0 && iEn < 0 ? (c[iC + 1] || '').trim() : ''), en });
+  });
+  return out;
+}
+function fillDefSelect() {
+  const frag = document.createDocumentFragment();
+  defCodes.forEach(d => { const o = document.createElement('option'); o.value = d.code; o.textContent = d.desc ? `${d.code} · ${d.desc}` : d.code; if (d.en) o.title = d.en; frag.append(o); });
+  $('defCode').replaceChildren(frag);
+  $('defCount').textContent = `Đang có ${defCodes.length} mã lỗi` + (store.get('pm_defect_url', DEFAULT_DEFECT_URL) ? '' : ' (danh sách mẫu, chưa liên kết Sheets)');
+}
+async function syncDefects(showMsg) {
+  const url = store.get('pm_defect_url', DEFAULT_DEFECT_URL);
+  if (!url) return;
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 10000);
+  try {
+    const res = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
+    if (!res.ok) throw 0;
+    const rows = parseDefects(await res.text());
+    if (!rows.length) throw 0;
+    defCodes = rows; store.set('pm_defects_cache', rows); fillDefSelect(); renderPareto();
+    if (showMsg) flash($('defMsg'), `✅ Đã đồng bộ ${rows.length} mã lỗi`);
+  } catch { if (showMsg) flash($('defMsg'), '❌ Không tải được link mã lỗi. Kiểm tra lại link CSV đã xuất bản.', true); }
+  finally { clearTimeout(t); }
+}
+const DEFAULT_EMP_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vStbjgCmowvOlDqicI6jd9HhqBOSbyoXCgNk3kiYuuyGFw_yrYXupezzdYqmgu-eL0qkHlausHsksHH/pub?output=csv';
+let employees = store.get('pm_emp_cache', []);
+const norm = t => String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+const empNameOf = (id, st) => id === '?' ? 'Không xác định' : (!id || id === '—') ? 'Chưa ghi nhận' : ((employees.find(e => e.id === id) || {}).name || st || '');
+function parseEmp(text) {
+  const all = csvRows(text);
+  let h = all.findIndex(r => r.some(x => /HỌ\s*VÀ\s*TÊN|^ID$/i.test(x.trim())));
+  if (h < 0) h = 0;
+  const head = all[h].map(x => x.trim().toUpperCase());
+  const col = (re, d) => { const i = head.findIndex(x => re.test(x)); return i >= 0 ? i : d; };
+  const iId = col(/^ID$|MÃ\s*NV|MSNV|MÃ SỐ/, 1), iN = col(/HỌ|TÊN|NAME/, 2);
+  const seen = new Set(), out = [];
+  all.slice(h + 1).forEach(c => { const id = (c[iId] || '').trim(); if (id && !seen.has(id)) { seen.add(id); out.push({ id, name: (c[iN] || '').trim() }); } });
+  return out;
+}
+function fillEmpSel(fid, sid, unk) {
+  const q = norm($(fid).value.trim()), sel = $(sid), cur = sel.value, frag = document.createDocumentFragment();
+  const add = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; frag.append(o); };
+  add('', '— Chọn nhân viên —'); if (unk) add('?', 'Không xác định');
+  const list = employees.filter(e => !q || norm(e.id + ' ' + e.name).includes(q));
+  list.slice(0, 200).forEach(e => add(e.id, `${e.id} · ${e.name}`));
+  sel.replaceChildren(frag);
+  if (q && list.length === 1) sel.value = list[0].id;
+  else if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+  return list.length;
+}
+function fillEmpSelect() {
+  const n = fillEmpSel('empFilter', 'defEmp', true); fillEmpSel('opFilter', 'opEmp', false);
+  $('empCount').textContent = `(${n}/${employees.length})`;
+  $('empInfo').textContent = `Đang có ${employees.length} nhân viên`;
+}
+async function syncEmp(show) {
+  const url = store.get('pm_emp_url', DEFAULT_EMP_URL);
+  if (!url) return;
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 10000);
+  try {
+    const res = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
+    if (!res.ok) throw 0;
+    const rows = parseEmp(await res.text());
+    if (!rows.length) throw 0;
+    employees = rows; store.set('pm_emp_cache', rows); fillEmpSelect(); renderPareto();
+    if (show) flash($('empMsg'), `✅ Đã đồng bộ ${rows.length} nhân viên`);
+  } catch { if (show) flash($('empMsg'), '❌ Không tải được link nhân viên. Kiểm tra link CSV đã xuất bản.', true); }
+  finally { clearTimeout(t); }
+}
+function renderEmp() {
+  $('empLabel').textContent = $('parLabel').textContent;
+  const fLine = $('filterLine').value, [from, to] = parRange(), by = {};
+  reports.filter(r => r.date >= from && r.date <= to && (!fLine || r.line === fLine)).forEach(r => (r.defectList || []).forEach(x => {
+    const k = x.emp || '—', e = by[k] || (by[k] = { id: k, st: x.empName, total: 0, codes: {} });
+    e.total += x.qty; e.codes[x.code] = (e.codes[x.code] || 0) + x.qty;
+  }));
+  const arr = Object.values(by).sort((a, b) => b.total - a.total);
+  if (!arr.length) { $('empChart').innerHTML = '<div class="empty">Chưa có lỗi gắn với nhân viên trong khoảng thời gian này</div>'; return; }
+  const max = arr[0].total, short = n => (n || '').trim().split(/\s+/).pop();
+  $('empChart').innerHTML = `<div class="legend"><span><i class="dot bad"></i>Nhiều lỗi nhất</span><span><i class="dot" style="background:#e0a82e"></i>Khác</span></div>
+    <div class="plot"><div class="plotin">` + arr.map((e, i) => { const c = i === 0 ? 'bad' : 'mid', nm = empNameOf(e.id, e.st);
+      return `<div class="cw"><div class="cb"><div class="val ${c}"><b>${fmt(e.total, 0)}</b></div><div class="bar ${c}" style="height:${e.total / max * 72}%"></div></div><div class="lbl"><b>${esc(e.id === '?' ? '?' : e.id === '—' ? '—' : e.id)}</b><small title="${esc(nm)}">${esc(short(nm))}</small></div></div>`; }).join('') +
+    `</div></div><div class="table-wrap"><table style="min-width:520px"><thead><tr><th>#</th><th>ID</th><th>Họ tên</th><th>Lỗi</th><th>Lỗi nhiều nhất</th><th>Chi tiết mã lỗi</th></tr></thead><tbody>` +
+    arr.map((e, i) => { const cs = Object.entries(e.codes).sort((a, b) => b[1] - a[1]), top = cs[0];
+      return `<tr><td>${i + 1}</td><td><b>${esc(e.id)}</b></td><td>${esc(empNameOf(e.id, e.st))}</td><td class="${i === 0 ? 'bad' : ''}">${fmt(e.total, 0)}</td><td>${esc(top[0])} · ${esc(defName(top[0]))} (${top[1]})</td><td>${cs.map(([c, q]) => esc(c) + ' ×' + q).join(', ')}</td></tr>`; }).join('') + '</tbody></table></div>';
+}
+let pendOp = [];
+function renderOpList() {
+  const p = data[Number($('repFpnr').value)], std = p ? p.total : 0;
+  $('opList').innerHTML = pendOp.length ? pendOp.map(o => { const eff = o.mins > 0 && std > 0 ? o.qty * std / o.mins * 100 : 0;
+    return `<span class="chip"><span><b>${esc(o.emp)}</b> ${esc(empNameOf(o.emp, o.empName))}<br><small style="color:var(--muted)">${fmt(o.qty, 0)} bộ · ${fmt(o.mins, 0)} phút · HS ${fmt(eff, 1)}%</small></span><button type="button" data-rm="${esc(o.emp)}" aria-label="Xóa">×</button></span>`; }).join('')
+    : '<span class="hint">Chưa có (bỏ trống nếu chỉ báo cáo theo bộ dây)</span>';
+}
+let outbox = store.get('pm_outbox', []), flushing = false;
+const saveOut = () => store.set('pm_outbox', outbox);
+function payload(r) {
+  return { id: r.id, date: r.date, shift: r.shift, line: r.line, user: r.user, fpnr: r.fpnr || '', name: r.name || '', plan: r.plan, actual: r.actual, std: r.std || 0,
+    ops: (r.ops || []).map(o => ({ emp: o.emp, name: empNameOf(o.emp, o.empName), qty: o.qty, mins: o.mins })),
+    defects: (r.defectList || []).map(x => ({ code: x.code, desc: defName(x.code), qty: x.qty, emp: x.emp || '', name: x.emp ? empNameOf(x.emp, x.empName) : '' })) };
+}
+function updatePushInfo() { $('pushInfo').textContent = `Đang chờ gửi: ${outbox.length} bản ghi` + (store.get('pm_push_url', '') ? '' : ' (chưa nhập link Web App)'); }
+function queue(op) { outbox.push(op); saveOut(); updatePushInfo(); flushOutbox(false); }
+async function flushOutbox(show) {
+  const url = store.get('pm_push_url', ''), token = store.get('pm_push_token', '');
+  if (!url) { if (show) flash($('pushMsg'), '❌ Chưa nhập link Web App', true); return; }
+  if (flushing) return;
+  if (!outbox.length) { if (show) flash($('pushMsg'), '✅ Không còn dữ liệu chờ gửi'); return; }
+  flushing = true; let sent = 0;
+  try {
+    while (outbox.length) {
+      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 25000);
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ token, ...outbox[0] }), signal: ctl.signal });
+      clearTimeout(t);
+      const j = await res.json();
+      if (!j.ok) throw new Error(j.error || 'Máy chủ từ chối');
+      outbox.shift(); saveOut(); sent++;
+    }
+    if (show || sent) flash($('pushMsg'), `✅ Đã gửi ${sent} bản ghi lên Google Sheets`);
+  } catch (e) { if (show) flash($('pushMsg'), '❌ Chưa gửi được: ' + (e.message || 'lỗi mạng') + '. App sẽ tự thử lại.', true); }
+  finally { flushing = false; updatePushInfo(); }
+}
+function renderDefList() {
+  $('defList').innerHTML = pendDef.length ? pendDef.map(x => `<span class="chip"><span><b>${esc(x.code)}</b> ${esc(defName(x.code))} × ${x.qty}<br><small style="color:var(--muted)">👷 ${esc(x.emp === '?' ? 'Không xác định' : x.emp + ' · ' + empNameOf(x.emp, x.empName))}</small></span><button type="button" data-rm="${esc(x.code)}|${esc(x.emp)}" aria-label="Xóa">×</button></span>`).join('') : '<span class="hint">Chưa có lỗi nào (có thể bỏ trống nếu không có lỗi)</span>';
+  $('defTotal').textContent = fmt(pendDef.reduce((a, x) => a + x.qty, 0), 0);
+}
+function fillFpnr() {
+  const line = $('repLine').value, frag = document.createDocumentFragment();
+  let n = 0;
+  data.forEach((r, i) => { if (r.line === line) { n++; const o = document.createElement('option'); o.value = i; o.textContent = `${r.fpnr} · ${r.name}`; frag.append(o); } });
+  $('repFpnr').replaceChildren(frag);
+  $('fpnrCount').textContent = `(${n} bộ dây)`;
+  fpnrInfo();
+}
+function fpnrInfo() {
+  const p = data[Number($('repFpnr').value)];
+  renderOpList();
+  $('repFpnrInfo').textContent = p ? `${p.name} · ${p.group} · Phút chuẩn tổng: ${fmt(p.total, 3)}` : 'Chưa có bộ dây cho Line này';
+}
+const ymd = dt => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+function parRange() {
+  const v = $('parDate').value || localToday(), [y, m, d] = v.split('-').map(Number), sc = $('parScope').value;
+  if (sc === 'day') return [v, v];
+  if (sc === 'week') { const w = (new Date(y, m - 1, d).getDay() + 6) % 7; return [ymd(new Date(y, m - 1, d - w)), ymd(new Date(y, m - 1, d - w + 6))]; }
+  if (sc === 'month') return [ymd(new Date(y, m - 1, 1)), ymd(new Date(y, m, 0))];
+  if (sc === 'year') return [`${y}-01-01`, `${y}-12-31`];
+  return ['0000-00-00', '9999-99-99'];
+}
+function parShift(dir) {
+  const [y, m, d] = ($('parDate').value || localToday()).split('-').map(Number), sc = $('parScope').value;
+  const t = { day: new Date(y, m - 1, d + dir), week: new Date(y, m - 1, d + 7 * dir), month: new Date(y, m - 1 + dir, 1), year: new Date(y + dir, m - 1, 1) }[sc];
+  if (!t) return;
+  $('parDate').value = ymd(t); renderPareto();
+}
+function renderPareto() { renderParetoCore(); renderEmp(); }
+function renderParetoCore() {
+  const sc = $('parScope').value, fLine = $('filterLine').value, [from, to] = parRange();
+  const pv = $('parDate').value || localToday(), [y, m] = pv.split('-'), f2 = x => x.split('-').reverse().join('/');
+  $('parLabel').textContent = (sc === 'day' ? f2(pv) : sc === 'week' ? `${f2(from).slice(0, 5)} – ${f2(to)}` : sc === 'month' ? `Tháng ${m}/${y}` : sc === 'year' ? `Năm ${y}` : 'Tất cả thời gian') + (fLine ? ' · ' + fLine : '');
+  const sum = {}; let total = 0, output = 0;
+  reports.filter(r => r.date >= from && r.date <= to && (!fLine || r.line === fLine)).forEach(r => {
+    output += Number(r.actual) || 0;
+    const list = Array.isArray(r.defectList) && r.defectList.length ? r.defectList : ((Number(r.defects) || 0) > 0 ? [{ code: 'N/A', qty: Number(r.defects) }] : []);
+    list.forEach(x => { sum[x.code] = (sum[x.code] || 0) + x.qty; total += x.qty; });
+  });
+  const arr = Object.entries(sum).sort((a, b) => b[1] - a[1]);
+  if (!arr.length) { $('parChart').innerHTML = '<div class="empty">Chưa có dữ liệu lỗi trong khoảng thời gian này</div>'; return; }
+  const max = arr[0][1]; let cum = 0;
+  const rows = arr.map(([code, q]) => { const before = cum; cum += q; return { code, q, pct: q / total * 100, cum: cum / total * 100, hot: before < 0.8 * total }; });
+  $('parChart').innerHTML = `<div class="hint">Tổng ${fmt(total, 0)} lỗi · ${fmt(output > 0 ? total / output * 1e6 : 0, 0)} PPM</div>
+    <div class="legend"><span><i class="dot bad"></i>Nhóm gây ~80% lỗi (ưu tiên)</span><span><i class="dot" style="background:#e0a82e"></i>Còn lại</span></div>
+    <div class="plot"><div class="plotin">` + rows.map(r => { const c = r.hot ? 'bad' : 'mid';
+      return `<div class="cw"><div class="cb"><div class="val ${c}"><b>${fmt(r.q, 0)}</b><small>${fmt(r.pct, 0)}%</small></div><div class="bar ${c}" style="height:${r.q / max * 72}%"></div></div><div class="lbl"><b title="${esc(defName(r.code))}">${esc(r.code)}</b></div></div>`; }).join('') +
+    `</div></div><div class="table-wrap"><table style="min-width:380px"><thead><tr><th>Mã</th><th>Mô tả</th><th>Lỗi</th><th>%</th><th>Lũy kế</th></tr></thead><tbody>` +
+    rows.map(r => `<tr><td><b>${esc(r.code)}</b></td><td>${esc(defName(r.code))}</td><td>${fmt(r.q, 0)}</td><td>${fmt(r.pct, 1)}%</td><td class="${r.hot ? 'bad' : ''}">${fmt(r.cum, 0)}%</td></tr>`).join('') + '</tbody></table></div>';
+}
+
+function ppmTargets() { return store.get('pm_ppm_targets', {}); }
+function loadPpmTarget() {
+  const t = ppmTargets(), m = $('ppmMonth').value;
+  $('ppmTarget').value = t[m] ?? t.default ?? 600;
+}
+function renderPPM() {
+  const month = $('ppmMonth').value || localToday().slice(0, 7), fLine = $('filterLine').value;
+  const target = Math.max(0, num($('ppmTarget').value));
+  $('ppmLineTxt').textContent = fLine ? 'Line ' + fLine : 'Tất cả Line';
+  const byDay = {};
+  reports.filter(r => String(r.date).startsWith(month) && (!fLine || r.line === fLine)).forEach(r => {
+    const d = byDay[r.date] || (byDay[r.date] = { a: 0, d: 0 });
+    d.a += Number(r.actual) || 0; d.d += Number(r.defects) || 0;
+  });
+  let ca = 0, cd = 0;
+  const list = Object.keys(byDay).sort().map(k => {
+    const x = byDay[k]; ca += x.a; cd += x.d;
+    return { date: k, a: x.a, d: x.d, ppm: x.a > 0 ? x.d / x.a * 1e6 : 0, cppm: ca > 0 ? cd / ca * 1e6 : 0 };
+  });
+  const ppm = ca > 0 ? cd / ca * 1e6 : 0, allow = target * ca / 1e6, margin = allow - cd;
+  const ok = ca > 0 && ppm <= target;
+  $('ppmBox').className = 'result' + (ca > 0 ? (ok ? ' good' : ' bad') : '');
+  $('ppmNow').textContent = ca > 0 ? fmt(ppm, 0) + ' PPM' : '—';
+  $('ppmStatus').textContent = ca === 0 ? 'Chưa có dữ liệu trong tháng này'
+    : ok ? `✅ ĐẠT target ${fmt(target, 0)} PPM` : `❌ VƯỢT target ${fmt(target, 0)} PPM (+${fmt(ppm - target, 0)})`;
+  $('ppmOut').textContent = fmt(ca, 0) + ' bộ';
+  $('ppmDef').textContent = fmt(cd, 0);
+  $('ppmAllow').textContent = fmt(Math.floor(allow * 100) / 100, 2);
+  $('ppmMargin').textContent = ca > 0 ? (margin >= 0 ? '+' : '') + fmt(margin, 2) : '—';
+  $('ppmMargin').style.color = ca > 0 ? (margin >= 0 ? '#4fe0b0' : '#ff8f96') : '';
+  if (!list.length) {
+    $('ppmChart').innerHTML = '<div class="empty">Chưa có dữ liệu</div>';
+    $('ppmBody').innerHTML = '<tr><td colspan="5" class="empty">Chưa có dữ liệu</td></tr>';
+    return;
+  }
+  const sc = Math.max(1, target * 1.15, ...list.map(x => x.cppm));
+  $('ppmChart').innerHTML = `<div class="plotin"><div class="thrline"><i style="bottom:${target / sc * 72}%"></i><span style="bottom:${target / sc * 72}%;top:auto;margin-bottom:2px">Target ${fmt(target, 0)}</span></div>` +
+    list.map(x => { const c = x.cppm <= target ? 'ok' : 'bad';
+      return `<div class="cw sm"><div class="cb"><div class="val ${c}"><b>${fmt(x.cppm, 0)}</b></div><div class="bar ${c}" style="height:${x.cppm / sc * 72}%"></div></div><div class="lbl"><b>${esc(x.date.slice(8))}</b></div></div>`; }).join('') + '</div>';
+  $('ppmBody').innerHTML = list.slice().reverse().map(x => `<tr><td>${esc(x.date.split('-').reverse().join('/'))}</td><td>${fmt(x.a, 0)}</td><td style="color:var(--red)">${fmt(x.d, 0)}</td><td>${fmt(x.ppm, 0)}</td><td class="${x.cppm <= target ? 'ok' : 'bad'}">${fmt(x.cppm, 0)}</td></tr>`).join('');
+}
+
+function renderDashboard() {
+  renderPPM();
+  renderPareto();
+  const fDate = $('filterDate').value, fLine = $('filterLine').value;
+  const filtered = reports.filter(r => (!fDate || r.date === fDate) && (!fLine || r.line === fLine))
+    .sort((a, b) => b.date.localeCompare(a.date));
+  let tp = 0, ta = 0, td = 0; const lead = {};
+  filtered.forEach(r => {
+    const p = Number(r.plan) || 0, a = Number(r.actual) || 0, d = Number(r.defects) || 0;
+    tp += p; ta += a; td += d;
+    const s = lead[r.user] || (lead[r.user] = { p: 0, a: 0, d: 0 });
+    s.p += p; s.a += a; s.d += d;
+  });
+  $('dashPlan').textContent = fmt(tp, 0) + ' bộ';
+  $('dashActual').textContent = fmt(ta, 0) + ' bộ';
+  $('dashRate').textContent = fmt(tp > 0 ? ta / tp * 100 : 0, 1) + '%';
+  $('dashDefects').textContent = fmt(td, 0);
+
+  const names = Object.keys(lead);
+  const thr = Math.max(0, num($('passThr').value));
+  const dayTxt = fDate ? fDate.split('-').reverse().join('/') : 'tất cả các ngày';
+  document.querySelectorAll('.cd').forEach(e => { e.textContent = dayTxt; });
+  const lbl = n => {
+    const ls = [...new Set(filtered.filter(r => r.user === n).map(r => r.line))].join('/');
+    return `<div class="lbl"><b title="${esc(n)}">${esc(n)}</b><small>${esc(ls)}</small></div>`;
+  };
+  if (!names.length) {
+    $('perfChart').innerHTML = $('defChart').innerHTML = '<div class="empty">Chưa có dữ liệu báo cáo</div>';
+  } else {
+    const rates = names.map(n => lead[n].p > 0 ? lead[n].a / lead[n].p * 100 : 0);
+    const sc = Math.max(120, ...rates, thr * 1.1);
+    $('perfChart').innerHTML = `<div class="plotin"><div class="thrline"><i style="bottom:${thr / sc * 72}%"></i><span style="bottom:${thr / sc * 72}%;top:auto;margin-bottom:2px">Mục tiêu ${fmt(thr, 0)}%</span></div>` +
+      names.map((n, i) => {
+        const s = lead[n], ok = rates[i] >= thr, c = ok ? 'ok' : 'bad';
+        return `<div class="cw"><div class="cb"><div class="val ${c}"><b>${fmt(rates[i], 1)}%</b><small>${fmt(s.a, 0)}/${fmt(s.p, 0)} bộ</small></div><div class="bar ${c}" style="height:${rates[i] / sc * 72}%"></div></div>${lbl(n)}</div>`;
+      }).join('') + '</div>';
+    const dmax = Math.max(1, ...names.map(n => lead[n].d));
+    $('defChart').innerHTML = '<div class="plotin">' + names.map(n => {
+      const s = lead[n], c = s.d === 0 ? 'ok' : 'bad', dr = s.a > 0 ? s.d / s.a * 100 : 0;
+      return `<div class="cw"><div class="cb"><div class="val ${c}"><b>${fmt(s.d, 0)} lỗi</b><small>${fmt(dr, 1)}% sản lượng</small></div><div class="bar ${c}" style="height:${s.d / dmax * 72}%"></div></div>${lbl(n)}</div>`;
+    }).join('') + '</div>';
   }
 
-  inputs.forEach(id => $(id).addEventListener('input', calc));
-  calc();
+  $('reportTableBody').innerHTML = filtered.length ? filtered.map(r => `<tr>
+    <td>${esc(r.date)}</td><td>${esc(r.shift)}</td><td><b>${esc(r.line)}</b></td><td>${esc(r.fpnr || "—")}</td><td>${esc(r.user)}</td>
+    <td>${esc(r.plan)}</td><td>${esc(r.actual)}</td><td style="color:var(--red)">${esc(r.defects)}</td>
+    <td><button class="btn-del" type="button" data-del-report="${esc(r.id)}">Xóa</button></td></tr>`).join('')
+    : '<tr><td colspan="9" class="empty">Chưa có báo cáo phù hợp</td></tr>';
+}
+
+$('reportTableBody').addEventListener('click', e => {
+  const id = e.target.dataset.delReport;
+  if (!id || !confirm('Bạn có chắc muốn xóa báo cáo này không?')) return;
+  reports = reports.filter(r => r.id !== id);
+  queue({ op: 'delete', id });
+  store.set('pm_prod_reports', reports);
+  renderDashboard();
+});
+
+function flash(el, text, err) {
+  el.textContent = text; el.classList.toggle('err', !!err);
+  clearTimeout(el._t); el._t = setTimeout(() => { el.textContent = ''; }, 3500);
+}
+
+$('btnSaveReport').addEventListener('click', () => {
+  const date = $('repDate').value, plan = num($('repPlan').value), actual = num($('repActual').value), p = data[Number($('repFpnr').value)];
+  if (!date) return flash($('repMsg'), '❌ Vui lòng chọn ngày báo cáo!', true);
+  if (!p) return flash($('repMsg'), '❌ Vui lòng chọn bộ dây FPNR!', true);
+  if (plan < 0 || actual < 0) return flash($('repMsg'), '❌ Số liệu không được âm!', true);
+  const defects = pendDef.reduce((a, x) => a + x.qty, 0);
+  const rec = { id: uid(), date, shift: $('repShift').value, line: p.line, fpnr: p.fpnr, name: p.name, user: $('repUser').value || 'Admin', plan, actual, std: p.total, defects, defectList: pendDef.map(x => ({ ...x })), ops: pendOp.map(o => ({ ...o })) };
+  reports.push(rec);
+  store.set('pm_prod_reports', reports);
+  queue({ op: 'upsert', report: payload(rec) });
+  pendDef = []; pendOp = []; renderDefList(); renderOpList();
+  flash($('repMsg'), '✅ Đã lưu báo cáo!');
+  $('filterDate').value = date; $('parDate').value = date;
+  renderDashboard();
+  showPage('dashboard');
+});
+$('repLine').addEventListener('change', fillFpnr);
+$('repFpnr').addEventListener('change', fpnrInfo);
+$('btnAddDef').addEventListener('click', () => {
+  const code = $('defCode').value, qty = Math.floor(num($('defQty').value)), emp = $('defEmp').value;
+  if (!code || qty < 1) return flash($('repMsg'), '❌ Chọn mã lỗi và nhập số lượng ≥ 1', true);
+  if (!emp) return flash($('repMsg'), '❌ Vui lòng chọn nhân viên gây lỗi (hoặc "Không xác định")', true);
+  const empName = emp === '?' ? 'Không xác định' : (employees.find(e => e.id === emp) || {}).name || '';
+  const ex = pendDef.find(x => x.code === code && x.emp === emp);
+  if (ex) ex.qty += qty; else pendDef.push({ code, qty, emp, empName });
+  $('defQty').value = 1; renderDefList();
+});
+$('defList').addEventListener('click', e => { const c = e.target.dataset.rm; if (c) { pendDef = pendDef.filter(x => `${x.code}|${x.emp}` !== c); renderDefList(); } });
+$('empFilter').addEventListener('input', fillEmpSelect);
+$('opFilter').addEventListener('input', fillEmpSelect);
+$('btnAddOp').addEventListener('click', () => {
+  const emp = $('opEmp').value, qty = Math.floor(num($('opQty').value)), mins = num($('opMin').value);
+  if (!emp) return flash($('repMsg'), '❌ Chọn nhân viên chạy bộ dây', true);
+  if (qty < 1 || mins <= 0) return flash($('repMsg'), '❌ Nhập sản lượng ≥ 1 và phút làm việc > 0', true);
+  const empName = (employees.find(e => e.id === emp) || {}).name || '', ex = pendOp.find(o => o.emp === emp);
+  if (ex) { ex.qty += qty; ex.mins += mins; } else pendOp.push({ emp, empName, qty, mins });
+  $('repActual').value = pendOp.reduce((a, o) => a + o.qty, 0);
+  $('opQty').value = 1; renderOpList();
+});
+$('opList').addEventListener('click', e => { const c = e.target.dataset.rm; if (c) { pendOp = pendOp.filter(o => o.emp !== c); if (pendOp.length) $('repActual').value = pendOp.reduce((a, o) => a + o.qty, 0); renderOpList(); } });
+$('btnPushSave').addEventListener('click', () => { store.set('pm_push_url', $('pushUrl').value.trim()); store.set('pm_push_token', $('pushToken').value.trim()); updatePushInfo(); flushOutbox(true); });
+$('btnPushAll').addEventListener('click', () => {
+  if (!store.get('pm_push_url', '')) return flash($('pushMsg'), '❌ Chưa nhập link Web App', true);
+  reports.forEach(r => outbox.push({ op: 'upsert', report: payload(r) })); saveOut(); updatePushInfo(); flushOutbox(true);
+});
+$('btnEmpSave').addEventListener('click', () => { store.set('pm_emp_url', $('empUrl').value.trim()); syncEmp(true); });
+$('btnExport').addEventListener('click', () => {
+  const fDate = $('filterDate').value, fLine = $('filterLine').value;
+  const list = reports.filter(r => (!fDate || r.date === fDate) && (!fLine || r.line === fLine)).sort((a, b) => a.date.localeCompare(b.date));
+  if (!list.length) return alert('Không có dữ liệu để xuất theo bộ lọc hiện tại.');
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`, rows = [];
+  list.forEach(r => {
+    const base = [r.date, r.shift, r.line, r.fpnr || '', r.name || '', r.user, r.plan, r.actual];
+    const dl = Array.isArray(r.defectList) && r.defectList.length ? r.defectList : ((Number(r.defects) || 0) > 0 ? [{ code: 'N/A', qty: r.defects, emp: '—' }] : [{}]);
+    dl.forEach(x => rows.push([...base, x.emp || '', x.emp ? empNameOf(x.emp, x.empName) : '', x.code || '', x.code ? defName(x.code) : '', x.qty ?? '']));
+  });
+  const head = ['Ngày', 'Ca', 'Line', 'FPNR', 'Tên bộ dây', 'Team Lead', 'Kế hoạch', 'Thực tế', 'ID nhân viên', 'Họ tên', 'Mã lỗi', 'Mô tả lỗi', 'Số lượng lỗi'];
+  const blob = new Blob(['\ufeff' + [head, ...rows].map(r => r.map(q).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `bao-cao-loi_${localToday()}.csv`;
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+$('parScope').addEventListener('change', renderPareto);
+$('parDate').addEventListener('change', renderPareto);
+$('parPrev').addEventListener('click', () => parShift(-1));
+$('parNext').addEventListener('click', () => parShift(1));
+$('btnDefSave').addEventListener('click', () => { store.set('pm_defect_url', $('defUrl').value.trim()); fillDefSelect(); syncDefects(true); if (!$('defUrl').value.trim()) flash($('defMsg'), 'Đã xóa link, dùng danh sách mẫu'); });
+$('filterDate').addEventListener('change', renderDashboard);
+$('filterLine').addEventListener('change', renderDashboard);
+
+/* ---------- Tài khoản Team Lead ---------- */
+async function sha256(s) {
+  try {
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+    return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+  } catch { return ''; }
+}
+function renderAccounts() {
+  $('accountTableBody').innerHTML = accounts.length ? accounts.map(a => `<tr><td><b>${esc(a.user)}</b></td><td>Team Lead</td>
+    <td><button class="btn-del" type="button" data-del-acc="${esc(a.user)}">Xóa</button></td></tr>`).join('')
+    : '<tr><td colspan="3" class="empty">Chưa có tài khoản nào</td></tr>';
+  updateTeamLeadSelect();
+}
+$('accountTableBody').addEventListener('click', e => {
+  const u = e.target.dataset.delAcc;
+  if (!u || !confirm(`Xóa tài khoản "${u}"?`)) return;
+  accounts = accounts.filter(a => a.user !== u);
+  store.set('pm_team_accounts', accounts);
+  renderAccounts();
+});
+$('btnAddAccount').addEventListener('click', async () => {
+  const user = $('newUsername').value.trim(), pass = $('newPassword').value;
+  if (!user || !pass) return flash($('accMsg'), '❌ Vui lòng nhập đầy đủ tên và mật khẩu!', true);
+  if (user.toLowerCase() === 'admin' || accounts.some(a => a.user.toLowerCase() === user.toLowerCase()))
+    return flash($('accMsg'), '❌ Tên tài khoản đã tồn tại!', true);
+  accounts.push({ user, hash: await sha256(user + ':' + pass) });
+  store.set('pm_team_accounts', accounts);
+  $('newUsername').value = ''; $('newPassword').value = '';
+  flash($('accMsg'), `✅ Đã thêm Team Lead "${user}"!`);
+  renderAccounts();
+});
+
+/* ---------- Đồng bộ Google Sheets ---------- */
+const badge = $('syncBadge');
+const setBadge = (t, warn) => { badge.textContent = t; badge.classList.toggle('warn', !!warn); };
+let syncing = false;
+async function syncSheets() {
+  if (syncing) return;
+  syncing = true; setBadge('⌛ Đang đồng bộ…', true);
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 10000);
+  try {
+    const res = await fetch(SHEET_CSV_URL, { signal: ctl.signal, cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = parseCSV(await res.text());
+    if (!rows.length) throw new Error('Trống');
+    setData(rows); store.set('pm_sheets_cache_v2', rows);
+    setBadge('● Google Sheets');
+  } catch {
+    if (!data.length || data === SAMPLE_DATA) {
+      const cached = store.get('pm_sheets_cache_v2', null);
+      if (cached && cached.length) { setData(cached); setBadge('⚠️ Ngoại tuyến (cache)', true); }
+      else { setData(SAMPLE_DATA); setBadge('⚠️ Dữ liệu mẫu', true); }
+    } else setBadge('⚠️ Ngoại tuyến (cache)', true);
+  } finally { clearTimeout(timer); syncing = false; }
+}
+
+/* ---------- Khởi chạy ---------- */
+['orderMinutes', 'shiftMinutes', 'shifts', 'operators', 'efficiency'].forEach(id => $(id).addEventListener('input', calc1));
+['basis', 'work', 'eff2', 'people'].forEach(id => $(id).addEventListener('input', calc2));
+$('sel').addEventListener('change', pick);
+const syncAll = () => { syncSheets(); syncDefects(false); syncEmp(false); };
+badge.addEventListener('click', syncAll);
+$('btnSync').addEventListener('click', syncAll);
+window.addEventListener('online', syncAll);
+
+$('repDate').value = localToday();
+$('filterDate').value = localToday();
+$('passThr').value = store.get('pm_pass_thr', 100);
+$('ppmMonth').value = localToday().slice(0, 7);
+loadPpmTarget();
+$('ppmMonth').addEventListener('change', () => { loadPpmTarget(); renderDashboard(); });
+$('ppmTarget').addEventListener('input', () => {
+  const t = ppmTargets(), v = Math.max(0, num($('ppmTarget').value));
+  t[$('ppmMonth').value] = v; t.default = v; store.set('pm_ppm_targets', t); renderPPM();
+});
+$('passThr').addEventListener('input', () => { store.set('pm_pass_thr', num($('passThr').value)); renderDashboard(); });
+$('btnAllDays').addEventListener('click', () => { $('filterDate').value = ''; renderDashboard(); });
+calc1();
+renderAccounts();
+renderDashboard();
+$('parDate').value = localToday();
+$('defUrl').value = store.get('pm_defect_url', DEFAULT_DEFECT_URL);
+$('empUrl').value = store.get('pm_emp_url', DEFAULT_EMP_URL);
+$('pushUrl').value = store.get('pm_push_url', ''); $('pushToken').value = store.get('pm_push_token', '');
+updatePushInfo(); renderOpList(); flushOutbox(false);
+setInterval(() => flushOutbox(false), 60 * 60 * 1000);
+window.addEventListener('online', () => flushOutbox(false));
+document.addEventListener('visibilitychange', () => { if (!document.hidden) flushOutbox(false); });
+fillDefSelect(); fillEmpSelect(); renderDefList(); renderDashboard(); syncDefects(false); syncEmp(false);
+const cachedRows = store.get('pm_sheets_cache_v2', null);
+if (cachedRows && cachedRows.length) setData(cachedRows); // hiện ngay, đồng bộ ngầm sau
+syncSheets();
 </script>
 </body>
 </html>

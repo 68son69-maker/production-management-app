@@ -1,0 +1,12 @@
+{
+  "name": "Production Management – Wire Harness",
+  "short_name": "Production",
+  "lang": "vi",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#101a2b",
+  "description": "Quản lý kế hoạch, sản lượng và hiệu suất sản xuất bộ dây",
+  "icons": []
+}
