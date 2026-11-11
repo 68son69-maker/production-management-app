@@ -1805,6 +1805,8 @@ details.perm summary{cursor:pointer;color:#4cc2f0;font-size:13px;min-height:36px
     else { const a = findAcc(session.user); if (!a || a.blocked) session = null; }
     if (!session) store.set('pm_session', null);
   }
+  // Thêm dòng này để ép hiện màn hình ngay lập tức nếu chưa có session
+if (!session) { localStorage.removeItem('pm_session'); }
   renderLogin(); renderAccounts(); applyAccess();
 })();
 </script>
