@@ -1,16 +1,17 @@
-const CACHE_NAME = 'wire-harness-pwa-v1';
-const APP_FILES = ['./', './index.html', './manifest.webmanifest'];
-self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_FILES)));
-  self.skipWaiting();
+const CACHE = 'pm-v5';
+const ASSETS = [
+  './','./index.html','./manifest.webmanifest',
+  './css/style.css',
+  './js/store.js','./js/core.js','./js/auth.js','./js/orders.js',
+  './js/harness.js','./js/accounts.js','./js/login.js','./js/auth-patch.js','./js/app.js',
+  './xe/cut.webp','./xe/top.webp','./xe/left.webp','./xe/right.webp'
+];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(()=>self.skipWaiting()));
 });
-self.addEventListener('activate', event => {
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))));
-  self.clients.claim();
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
 });
-self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
-  event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
-    const copy = response.clone(); caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy)); return response;
-  }).catch(() => caches.match('./index.html'))));
+self.addEventListener('fetch', e => {
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
 });

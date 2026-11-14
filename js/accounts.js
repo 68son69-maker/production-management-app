@@ -1,0 +1,1 @@
+// accounts.js - da gop vao core.js, file nay de du cho index.html goi
