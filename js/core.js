@@ -569,9 +569,14 @@ function renderPPM() {
 function renderDashboard() {
   renderPPM();
   renderPareto();
-  const fDate = $('filterDate').value, fLine = $('filterLine').value;
-  const filtered = reports.filter(r => (!fDate || r.date === fDate) && (!fLine || r.line === fLine))
-    .sort((a, b) => b.date.localeCompare(a.date));
+    const fDate = $('filterDate').value, fLine = $('filterLine').value;
+  const cacheKey = fDate + '|' + fLine + '|' + reports.length;
+  if (!window._dashCache || window._dashCache.key !== cacheKey) {
+    const filtered = reports.filter(r => (!fDate || r.date === fDate) && (!fLine || r.line === fLine))
+      .sort((a, b) => b.date.localeCompare(a.date));
+    window._dashCache = { key: cacheKey, data: filtered };
+  }
+  const filtered = window._dashCache.data;
   let tp = 0, ta = 0, td = 0; const lead = {};
   filtered.forEach(r => {
     const p = Number(r.plan) || 0, a = Number(r.actual) || 0, d = Number(r.defects) || 0;
@@ -835,9 +840,13 @@ function ordTable(title, list) {
 }
 function renderOrders() {
   updateWeek();
-  const q = norm($('ordSearch').value.trim()), fg = $('ordGroup').value, f = $('ordFilter').value, vl = viewLines(), wn = weekInfo();
-  const base = orders.filter(o => (!vl || vl.includes(ordLine(o))) && (!fg || o.group === fg) && (!q || norm(`${o.fp} ${o.d} ${o.ser} ${o.bg}`).includes(q)) && (!f || ordSt(o)[2] === f));
-  const cnt = {};
+const q = norm($('ordSearch').value.trim()), fg = $('ordGroup').value, f = $('ordFilter').value, vl = viewLines(), wn = weekInfo();
+const ordCacheKey = q + '|' + fg + '|' + f + '|' + (vl ? vl.join(',') : '') + '|' + orders.length;
+if (!window._ordCache || window._ordCache.key !== ordCacheKey) {
+  const base = orders.filter(o => (!vl || vl.includes(ordLine(o))) && (!fg || o.group === fg) && (!q || norm(`${o.fp} ${o.group} ${o.line || ''} ${o.customer || ''}`).includes(q)));
+  window._ordCache = { key: ordCacheKey, data: base };
+}
+const base = window._ordCache.data;  const cnt = {};
   base.forEach(o => { const k = wkKey(o.due); (cnt[k] = cnt[k] || { n: 0, w: wkOf(o.due) }).n++; });
   if (ordWeek !== '' && !cnt[ordWeek]) ordWeek = '';
   const keys = Object.keys(cnt).map(Number).sort((a, b) => (a || 9e9) - (b || 9e9));
@@ -865,6 +874,8 @@ function renderOrders() {
   $('ordTables').innerHTML = html || `<div class="card empty">${vl && !vl.length ? 'Team Lead này chưa có báo cáo nên chưa xác định được khu vực.' : 'Đang đồng bộ dữ liệu đơn hàng từ Google Sheets…'}</div>`;
 }
 function applyOrders(rows) {
+   window._ordCache = null;
+  window._dashCache = null;
   orders = rows; store.set('pm_orders_cache', rows); store.set('pm_orders_miss', ordMiss); store.set('pm_orders_head', ordHead); store.set('pm_orders_time', new Date().toISOString());
   fillOrdGroup(); renderOrders(); updateOrdInfo();
 }
