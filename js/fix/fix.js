@@ -73,7 +73,7 @@
       const j = await res.json();
       if (!j.ok) throw new Error(j.error || 'Máy chủ chưa trả về báo cáo');
       const delIds = new Set(outbox.filter(o => o.op === 'delete').map(o => o.id));
-      const server = (j.reports || []).map(norm).filter(r => r.date && !delIds.has(r.id));
+      const server = (j.reports || []).map(norm).filter(r => r.date && !delIds.has(r.id) && (r.fpnr || r.plan || r.actual || r.defects));
       const ids = new Set(server.map(r => r.id));
       const localOnly = reports.filter(r => !r.id || !ids.has(r.id));   // giu lai bao cao chi co tren may
       reports = server.concat(localOnly);
