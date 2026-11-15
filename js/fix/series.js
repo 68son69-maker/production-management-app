@@ -156,7 +156,11 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) pull(); });
   $('syncBadge').addEventListener('click', pull);
   $('btnSync').addEventListener('click', pull);
-  setInterval(pull, 5 * 60 * 1000);
+  setInterval(pull, 5 * 60 * 1000);  window.__pgAdd = (fp, ser, m, p) => {
+    const rec = { id: uid(), fp, ser: ser || '', mont: m, pr: p, user: session ? session.user : '', date: localToday(), ts: new Date().toISOString() };
+    prog.push(rec); saveProg(); queue({ op: 'ordprog', id: rec.id, prog: rec });
+    refresh(); fillSel(); renderList(); rerender();
+  };
 
   refresh(); fillSel(); renderList();
   setTimeout(pull, 1500);

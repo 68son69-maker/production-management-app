@@ -65,7 +65,7 @@ loadConfigAuto();
       note.setAttribute('data-auto-config-note', '1');
       note.style.cssText = 'padding:10px;border-radius:10px;background:rgba(0,200,100,.15);color:#fff;font-size:13px;margin:10px 0;text-align:center';
       note.textContent = '✅ App đã tự lấy Link + Token từ hệ thống, bạn không cần nhập gì nữa.';
-      const btn = box.querySelector('button');
+      const btn = box.querySelector(':scope > button');
       if (btn) box.insertBefore(note, btn); else box.appendChild(note);
     }
     box.querySelectorAll('*').forEach(el => {
