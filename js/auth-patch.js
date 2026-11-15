@@ -1,34 +1,32 @@
-// auth-patch.js - BAN TOI UU CUOI CUNG - 1 FILE DUY NHAT
-// Link da chot, khong doi nua:
-// - Sheet Taikhoan (doc): pub?output=csv
-// - Web App Taikhoan (them TK): [STRIPPED 72 bytes]
-// - Web App Bao cao (keo bao cao): [STRIPPED 74 bytes]
-
-const CFG = {
+// auth-patch.js - P0 - TU GAN ID, KHONG CAN SUA index.html
+// Token KHONG de trong code, Admin nhap 1 lan o Cai dat
+const CFG_P0 = {
   SHEET_CSV: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSMJYnJ9kIR3DBgEQOag2Sk4ERaa5g9pRgoktySd2wMTvr8er8dfnt-UK6lsJnnp37SERJFVdV1a4h9/pub?output=csv',
-  ADD_ACCOUNT_URL: 'https://script.google.com/macros/s/AKfycbyaIg0TSyZ1EuhqFg8fT2EncxAwyinZ2qBVbRPYS3YLKYE07uvwXFaPZvdepdV9gDUf/exec',
-  REPORT_URL: 'https://script.google.com/macros/s/AKfycbwroNbMBO02aibQ7tFZxLKM9Ke1Gbl_OT0icHG8yThfalAVIjDAfX-xpxiX76mPBQI-Iw/exec',
-  TOKEN: 'Davson267',
-  ADMIN_PASS: '12345'
+  TOKEN_KEY: 'pm_push_token',
+  ADMIN_HASH_KEY: 'pm_admin_hash',
+  SALT: 'DAVSON-2026-'
 };
-
-// ===== TIEN ICH CHUNG =====
-function cleanDate(d) {
+function getTokenP0() { return store.get(CFG_P0.TOKEN_KEY, ''); }
+function getReportUrlP0() { return store.get('pm_push_url', ''); }
+function getAddUrlP0() { 
+  let u = store.get('pm_add_account_url', '');
+  if (!u) u = 'https://script.google.com/macros/s/AKfycbyaIg0TSyZ1EuhqFg8fT2EncxAwyinZ2qBVbRPYS3YLKYE07uvwXFaPZvdepdV9gDUf/exec';
+  return u;
+}
+function cleanDateP0(d) {
   if (!d) return d;
   const m = String(d).match(/(\d{4})-(\d{2})-(\d{2})/);
   if (m) return m[1] + '-' + m[2] + '-' + m[3];
   return String(d);
 }
-function fmtDateVN(d) {
+function fmtDateVNP0(d) {
   const s = String(d || '');
-  const m2 = s.match(/(\d{2})T.*\/(\d{2})\/(\d{4})/);
-  if (m2) return m2[1] + '/' + m2[2] + '/' + m2[3];
-  const c = cleanDate(d);
+  const c = cleanDateP0(d);
   const m = String(c).match(/(\d{4})-(\d{2})-(\d{2})/);
   if (m) return m[3] + '/' + m[2] + '/' + m[1];
   return c;
 }
-function parseCSV(t) {
+function parseCSVP0(t) {
   t = String(t || '').replace(/^\uFEFF/, '');
   const rows = []; let r = [], f = '', q = false;
   for (let i = 0; i < t.length; i++) {
@@ -42,12 +40,43 @@ function parseCSV(t) {
   if (f || r.length) { r.push(f); rows.push(r); }
   return rows;
 }
+async function hashWithSaltP0(user, pass) { return await sha256(user, pass + CFG_P0.SALT + user); }
+async function hashOldP0(user, pass) { return await sha256(user, pass); }
 
-// ===== 1. DANG NHAP QUA SHEET TAIKHOAN =====
-async function loadAccounts() {
-  const res = await fetch(CFG.SHEET_CSV, { cache: 'no-store' });
+// === TU GAN ID CHO 2 O TAO TEAM LEAD - BAN KHONG CAN SUA index.html ===
+function autoIdP0() {
+  if (document.getElementById('newLeadUser')) return true;
+  // Tim theo chu "Tai khoan Team Lead" -> lay 2 o input gan nhat
+  const allInputs = [...document.querySelectorAll('input')];
+  // Tim o co placeholder chua "Ten tai khoan" nam gan chu "Tai khoan Team Lead"
+  const title = [...document.querySelectorAll('*')].find(el => el.children.length === 0 && (el.textContent || '').includes('Tài khoản Team Lead'));
+  if (!title) return false;
+  let box = title.parentElement;
+  for (let i = 0; i < 4 && box; i++) {
+    const ins = box.querySelectorAll('input');
+    if (ins.length >= 2) {
+      // O dau tien la Ten, o thu 2 la Mat khau
+      if (!ins[0].id) ins[0].id = 'newLeadUser';
+      if (!ins[1].id) ins[1].id = 'newLeadPass';
+      return true;
+    }
+    box = box.parentElement;
+  }
+  // Neu khong tim thay theo tieu de, tim theo placeholder
+  const byPlace = allInputs.filter(el => (el.placeholder || '').includes('Tên tài khoản') || (el.placeholder || '').includes('Mật khẩu'));
+  if (byPlace.length >= 2) {
+    byPlace[0].id = 'newLeadUser';
+    byPlace[1].id = 'newLeadPass';
+    return true;
+  }
+  return false;
+}
+
+// ===== DANG NHAP =====
+async function loadAccountsP0() {
+  const res = await fetch(CFG_P0.SHEET_CSV, { cache: 'no-store' });
   const text = await res.text();
-  const rows = parseCSV(text);
+  const rows = parseCSVP0(text);
   if (rows.length < 2) return [];
   const head = rows[0].map(x => String(x || '').trim().toUpperCase());
   const idx = (n) => head.indexOf(n);
@@ -57,41 +86,29 @@ async function loadAccounts() {
     const user = (r[iUser] || '').trim();
     if (!user) return;
     const perms = {};
-    ['DASH', 'REPORT', 'PERF', 'ORDERS', 'HARNESS', 'EXPORT', 'DEL', 'HEDIT'].forEach(k => {
+    ['DASH','REPORT','PERF','ORDERS','HARNESS','EXPORT','DEL','HEDIT'].forEach(k => {
       const ii = idx(k);
       if (ii >= 0) perms[k.toLowerCase()] = String(r[ii] || '').trim().toUpperCase() === 'TRUE';
     });
-    list.push({
-      user,
-      hash: String(r[iHash] || '').replace(/[^0-9a-f]/gi, '').toLowerCase().slice(0, 64),
-      blocked: String(r[iBlock] || '').trim().toUpperCase() === 'TRUE',
-      perms
-    });
+    list.push({ user, hash: String(r[iHash] || '').replace(/[^0-9a-f]/gi, '').toLowerCase().slice(0, 64), blocked: String(r[iBlock] || '').trim().toUpperCase() === 'TRUE', perms });
   });
-  window.remoteAccounts = list;
-  accounts = list;
+  window.remoteAccounts = list; accounts = list;
   try { localStorage.setItem('pm_team_accounts', JSON.stringify(list)); } catch (e) {}
   return list;
 }
-
-(function hookLogin() {
+(function hookLoginP0() {
   const oldBtn = document.getElementById('btnLogin');
-  if (!oldBtn) return;
-  const newBtn = oldBtn.cloneNode(true);
-  oldBtn.parentNode.replaceChild(newBtn, oldBtn);
-  newBtn.addEventListener('click', async () => {
-    // Neu dang o man hinh Thiet lap thi xu ly Thiet lap, khong chay Dang nhap
+  if (!oldBtn || oldBtn._pmHooked) return;
+  oldBtn._pmHooked = true;
+  oldBtn.addEventListener('click', async () => {
     if ((document.body.innerText || '').includes('Thiết lập mật khẩu Admin')) {
       const visPass = [...document.querySelectorAll('input[type="password"]')].filter(el => el.offsetParent !== null && getComputedStyle(el).display !== 'none');
-      const p1 = visPass[0]?.value || '';
-      const p2 = visPass[1]?.value || '';
+      const p1 = visPass[0]?.value || ''; const p2 = visPass[1]?.value || '';
       const msg2 = document.getElementById('lgMsg');
       if (!p1 || !p2) { if (msg2) msg2.textContent = '❌ Nhập mật khẩu'; return; }
       if (p1 !== p2) { if (msg2) msg2.textContent = '❌ 2 mật khẩu không khớp'; return; }
-      const h = await sha256('Admin', p1);
-      store.set('pm_admin_hash', h);
-      location.reload();
-      return;
+      const h = await hashWithSaltP0('Admin', p1);
+      store.set(CFG_P0.ADMIN_HASH_KEY, h); location.reload(); return;
     }
     const u = (document.getElementById('lgUser')?.value || '').trim();
     const p = document.getElementById('lgPass')?.value || '';
@@ -99,210 +116,138 @@ async function loadAccounts() {
     const setMsg = (t) => { if (msg) msg.textContent = t; };
     if (!u || !p) return setMsg('❌ Nhập tên tài khoản và mật khẩu');
     if (/^admin$/i.test(u)) {
-      const h = await sha256('Admin', p);
-      if (h !== store.get('pm_admin_hash', '')) return setMsg('❌ Sai tên tài khoản hoặc mật khẩu');
-      session = { user: 'Admin', role: 'admin' };
-      finishLogin();
-      return;
+      const hNew = await hashWithSaltP0('Admin', p); const hOld = await hashOldP0('Admin', p);
+      const saved = store.get(CFG_P0.ADMIN_HASH_KEY, '');
+      if (hNew !== saved && hOld !== saved) return setMsg('❌ Sai tên tài khoản hoặc mật khẩu');
+      if (hNew !== saved) store.set(CFG_P0.ADMIN_HASH_KEY, hNew);
+      session = { user: 'Admin', role: 'admin' }; finishLogin(); return;
     }
     let accs = [];
-    try { accs = await loadAccounts(); } catch (e) { return setMsg('❌ Không tải được Sheet tài khoản.'); }
+    try { accs = await loadAccountsP0(); } catch (e) { return setMsg('❌ Không tải được Sheet tài khoản.'); }
     const a = accs.find(x => x.user.toLowerCase() === u.toLowerCase());
     if (!a) return setMsg('❌ Tài khoản chưa có. Liên hệ Admin!');
     if (a.blocked) return setMsg('❌ Tài khoản đã bị chặn.');
-    const h = await sha256(a.user, p);
-    if (h !== a.hash) return setMsg('❌ Sai tên tài khoản hoặc mật khẩu');
-    session = { user: a.user, role: 'lead' };
-    window.__remotePerms = { [a.user]: a.perms };
-    finishLogin();
+    const hNew = await hashWithSaltP0(a.user, p); const hOld = await hashOldP0(a.user, p);
+    if (hNew !== a.hash && hOld !== a.hash) return setMsg('❌ Sai tên tài khoản hoặc mật khẩu');
+    session = { user: a.user, role: 'lead' }; window.__remotePerms = { [a.user]: a.perms }; finishLogin();
   });
 })();
 
-// ===== 2. KEO BAO CAO TU FILE BAO CAO SAN XUAT =====
-async function pullReports(show) {
-  const url = CFG.REPORT_URL;
-  const token = CFG.TOKEN;
-  if (!url) { if (show) alert('Chưa nhập link Web App'); return; }
+// ===== KEO BAO CAO =====
+async function pullReportsP0(show) {
+  const url = getReportUrlP0(); const token = getTokenP0();
+  if (!url) { if (show) alert('Chưa nhập link Web App Báo cáo trong Cài đặt'); return; }
   try {
     const res = await fetch(url + '?mode=list&token=' + encodeURIComponent(token), { cache: 'no-store' });
     const j = await res.json();
     if (!j.ok) throw new Error(j.error || 'Máy chủ chưa trả về báo cáo');
     reports = (j.reports || []).map(r => {
-      const perf = r.perfList || r.perf || [];
-      const defs = r.defectList || r.defects || [];
+      const perf = r.perfList || r.perf || []; const defs = r.defectList || r.defects || [];
       const plan = perf.reduce((s, p) => s + (Number(p.plan) || 0), 0);
       const actual = perf.reduce((s, p) => s + (Number(p.actual) || Number(p.output) || 0), 0);
       const defects = Array.isArray(defs) ? defs.reduce((s, d) => s + (Number(d.qty) || Number(d.quantity) || Number(d.defects) || 0), 0) : (Number(r.defects) || 0);
-      return { ...r, date: cleanDate(r.date), plan, actual, output: actual, totalPlan: plan, totalActual: actual, defects, defectCount: defects };
+      return { ...r, date: cleanDateP0(r.date), plan, actual, output: actual, totalPlan: plan, totalActual: actual, defects, defectCount: defects };
     });
-    store.set('pm_prod_reports', reports);
-    renderDashboard();
-    if (show) alert('✅ Đã kéo ' + reports.length + ' báo cáo từ Sheet về cho Admin');
-  } catch (e) {
-    if (show) alert('❌ Chưa kéo được: ' + e.message);
-  }
+    store.set('pm_prod_reports', reports); renderDashboard();
+    if (show) alert('✅ Đã kéo ' + reports.length + ' báo cáo');
+  } catch (e) { if (show) alert('❌ Chưa kéo được: ' + e.message); }
 }
-document.getElementById('btnSync')?.addEventListener('click', () => pullReports(false));
+document.getElementById('btnSync')?.addEventListener('click', () => pullReportsP0(false));
 
-// ===== 3. THEM TEAM LEAD - LAY DUNG O TEN + MAT KHAU, KHONG CHAN PHAN QUYEN =====
-(function hookAddCorrect() {
-  const ADD_URL = 'https://script.google.com/macros/s/AKfycbyaIg0TSyZ1EuhqFg8fT2EncxAwyinZ2qBVbRPYS3YLKYE07uvwXFaPZvdepdV9gDUf/exec';
-  function findUserPass(btn) {
-    let box = btn.closest('div');
-    for (let i = 0; i < 6 && box; i++) {
-      const txt = (box.innerText || '');
-      if (txt.includes('Team Lead') && box.querySelectorAll('input').length >= 2) break;
-      box = box.parentElement;
-    }
-    if (!box) box = document.body;
-    const all = [...box.querySelectorAll('input')].filter(el => el.offsetParent !== null);
-    const filtered = all.filter(el => el.value !== 'Davson267' && !String(el.value || '').includes('script.google'));
-    let userEl = filtered.find(el => {
-      const lb = (el.closest('label')?.innerText || '') + ' ' + (el.placeholder || '') + ' ' + (el.previousElementSibling?.innerText || '');
-      return lb.toLowerCase().includes('tên') || lb.toLowerCase().includes('tài khoản') || lb.toLowerCase().includes('team lead');
-    });
-    let passEl = filtered.find(el => el.type === 'password');
-    if (!userEl) userEl = filtered.find(el => el.type === 'text');
-    if (!passEl) passEl = filtered[1];
-    return { userEl, passEl };
-  }
-  function hookAdd() {
+// ===== THEM TEAM LEAD - 1 HOOK DUY NHAT =====
+(function hookAddP0() {
+  let hooked = false;
+  function tryHook() {
+    if (hooked) return;
+    autoIdP0(); // Tu gan id truoc khi tim nut
+    const userEl = document.getElementById('newLeadUser');
+    const passEl = document.getElementById('newLeadPass');
     const btn = [...document.querySelectorAll('button')].find(b => (b.textContent || '').trim() === 'Thêm Team Lead');
-    if (!btn || btn._pmHooked3) return;
-    btn._pmHooked3 = true;
+    if (!userEl || !passEl || !btn) return;
+    hooked = true;
     btn.addEventListener('click', async (ev) => {
-      const { userEl, passEl } = findUserPass(btn);
-      const user = (userEl?.value || '').trim();
-      const pass = passEl?.value || '';
-      if (user === 'Davson267' || user.includes('script.google')) { alert('❌ Lấy nhầm ô Token, bạn nhập lại Tên tài khoản ở ô Tạo Team Lead'); return; }
+      ev.preventDefault();
+      const user = (userEl.value || '').trim(); const pass = passEl.value || '';
+      const addUrl = getAddUrlP0(); const token = getTokenP0();
       if (!user || !pass) { alert('❌ Nhập tên tài khoản và mật khẩu ở ô Tạo Team Lead'); return; }
-      const hash = await sha256(user, pass);
-      const q = new URLSearchParams({
-        mode: 'addAccount', token: 'Davson267', user, hash,
-        DASH: 'true', REPORT: 'true', PERF: 'true', ORDERS: 'true', HARNESS: 'true',
-        EXPORT: 'false', DEL: 'false', HEDIT: 'false'
-      });
+      if (!addUrl || !token) { alert('❌ Admin chưa nhập Link Web App Taikhoan + Token trong Cài đặt. Bạn nhập trước rồi tạo lại.'); return; }
+      if (user === token || user.includes('script.google')) { alert('❌ Bạn nhập nhầm ô Token, bạn nhập lại ở ô Tạo Team Lead'); return; }
+      const hash = await hashWithSaltP0(user, pass);
+      const q = new URLSearchParams({ mode: 'addAccount', token, user, hash, DASH: 'true', REPORT: 'true', PERF: 'true', ORDERS: 'true', HARNESS: 'true', EXPORT: 'false', DEL: 'false', HEDIT: 'false' });
       btn.textContent = 'Đang lưu lên Sheet...'; btn.disabled = true;
       try {
-        const res = await fetch(ADD_URL + '?' + q.toString());
-        const j = await res.json();
+        const res = await fetch(addUrl + '?' + q.toString()); const j = await res.json();
         if (!j.ok) throw new Error(j.error || 'Không lưu được');
-        alert('✅ Đã thêm ' + user + ' lên Sheet Taikhoan!');
-        if (userEl) userEl.value = '';
-        if (passEl) passEl.value = '';
-      } catch (e) {
-        alert('❌ Chưa đẩy lên Sheet được: ' + e.message);
-      } finally {
-        btn.textContent = 'Thêm Team Lead'; btn.disabled = false;
-      }
+        alert('✅ Đã thêm ' + user + ' lên Sheet Taikhoan!'); userEl.value = ''; passEl.value = '';
+        try { localStorage.removeItem('pm_team_accounts'); } catch (e) {}
+      } catch (e) { alert('❌ Chưa đẩy lên Sheet được: ' + e.message); }
+      finally { btn.textContent = 'Thêm Team Lead'; btn.disabled = false; }
     });
   }
-  setInterval(hookAdd, 1000);
+  const obs = new MutationObserver(() => tryHook());
+  obs.observe(document.body, { childList: true, subtree: true }); tryHook();
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-act]'); if (!btn) return;
+    const user = btn.dataset.user; const act = btn.dataset.act;
+    const addUrl = getAddUrlP0(); const token = getTokenP0();
+    if (!addUrl || !token) { alert('❌ Chưa nhập Link Web App Taikhoan + Token'); return; }
+    if (act === 'del') {
+      if (!confirm('Xóa tài khoản ' + user + ' ?')) return;
+      const q = new URLSearchParams({ mode: 'deleteAccount', token, user });
+      const res = await fetch(addUrl + '?' + q.toString()); const j = await res.json();
+      if (j.ok) { alert('✅ Đã xóa ' + user); location.reload(); } else alert('❌ ' + (j.error || 'Không xóa được'));
+    }
+    if (act === 'reset') {
+      const np = prompt('Nhập mật khẩu mới cho ' + user + ':'); if (!np) return;
+      const hash = await hashWithSaltP0(user, np);
+      const q = new URLSearchParams({ mode: 'updateAccount', token, user, hash });
+      const res = await fetch(addUrl + '?' + q.toString()); const j = await res.json();
+      if (j.ok) alert('✅ Đã cấp lại mật khẩu mới cho ' + user + '. Mật khẩu mới: ' + np); else alert('❌ ' + (j.error || 'Không cấp lại được'));
+    }
+  });
 })();
-// ===== 4. TU DONG CAU HINH + TU QUA THIET LAP + GON BANG + HIEN TK SHEET LEN CAI DAT =====
-(function autoConfig() {
-  try {
-    if (!store.get('pm_push_url')) store.set('pm_push_url', CFG.REPORT_URL);
-    if (!store.get('pm_push_token')) store.set('pm_push_token', CFG.TOKEN);
-  } catch (e) {}
 
-  (async () => {
-    try {
-      if (!store.get('pm_admin_hash')) {
-        const h = await sha256('Admin', CFG.ADMIN_PASS);
-        store.set('pm_admin_hash', h);
-      }
-    } catch (e) {}
-  })();
-
+// ===== TU DONG + GON BANG =====
+(function autoP0() {
+  (async () => { try { if (!store.get(CFG_P0.ADMIN_HASH_KEY)) { const h = await hashWithSaltP0('Admin', '12345'); store.set(CFG_P0.ADMIN_HASH_KEY, h); } } catch (e) {} })();
   const _oldFinish = window.finishLogin;
   if (_oldFinish && !_oldFinish._pmAutoPull) {
-    const _newFinish = function () {
-      _oldFinish.apply(this, arguments);
-      setTimeout(() => { try { pullReports(false); } catch (e) {} }, 500);
-    };
-    _newFinish._pmAutoPull = true;
-    window.finishLogin = _newFinish;
+    const _newFinish = function () { _oldFinish.apply(this, arguments); setTimeout(() => { try { pullReportsP0(false); } catch (e) {} }, 500); };
+    _newFinish._pmAutoPull = true; window.finishLogin = _newFinish;
   }
-
-  function setVal(input, val) {
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-    setter.call(input, val);
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-  }
-  function autoSetup() {
-    if (!(document.body.innerText || '').includes('Thiết lập mật khẩu Admin')) return;
-    const inputs = [...document.querySelectorAll('input[type="password"]')].filter(el => el.offsetParent !== null && getComputedStyle(el).display !== 'none');
-    const btn = [...document.querySelectorAll('button')].find(b => (b.textContent || '').includes('Tạo mật khẩu') && b.offsetParent !== null);
-    if (inputs.length >= 2 && btn) {
-      setVal(inputs[0], CFG.ADMIN_PASS);
-      setVal(inputs[1], CFG.ADMIN_PASS);
-      setTimeout(() => btn.click(), 300);
-    }
-  }
-  const setupTimer = setInterval(() => {
-    autoSetup();
-    if (!(document.body.innerText || '').includes('Thiết lập mật khẩu Admin')) clearInterval(setupTimer);
-  }, 500);
-  setTimeout(() => clearInterval(setupTimer), 10000);
-
   const st = document.createElement('style');
-  st.textContent = '.pm-scroll{max-height:210px!important;overflow-y:auto!important;overflow-x:auto!important;display:block!important;border-radius:10px}.pm-scroll table thead th{position:sticky!important;top:0!important;z-index:2!important;background:#1a2a3a!important}.pm-scroll table tbody tr:nth-child(even){background:rgba(255,255,255,.03)!important}.pm-scroll::-webkit-scrollbar{width:6px;height:6px}.pm-scroll::-webkit-scrollbar-thumb{background:#3a4a5a;border-radius:10px}.pm-sticky-head{position:sticky!important;top:0!important;z-index:2!important;background:#1a2a3a!important}';
+  st.textContent = '.pm-scroll{max-height:210px!important;overflow-y:auto!important;overflow-x:auto!important;display:block!important;border-radius:10px}.pm-scroll table thead th{position:sticky!important;top:0!important;z-index:2!important;background:#1a2a3a!important}.pm-scroll table tbody tr:nth-child(even){background:rgba(255,255,255,.03)!important}.pm-scroll::-webkit-scrollbar{width:6px;height:6px}.pm-scroll::-webkit-scrollbar-thumb{background:#3a4a5a;border-radius:10px}';
   document.head.appendChild(st);
-
-  function polish() {
-    document.querySelectorAll('td').forEach(td => {
-      const t = td.textContent.trim();
-      if (/^\d{4}-\d{2}-\d{2}/.test(t) || t.includes('T17:') || t.includes('T00:') || /^\d{2}T.*\/\d{2}\/\d{4}/.test(t)) td.textContent = fmtDateVN(t);
-    });
+  function polishP0() {
+    document.querySelectorAll('td').forEach(td => { const t = td.textContent.trim(); if (/^\d{4}-\d{2}-\d{2}/.test(t) || t.includes('T17:') || t.includes('T00:') || /^\d{2}T.*\/\d{2}\/\d{4}/.test(t)) td.textContent = fmtDateVNP0(t); });
     document.querySelectorAll('table').forEach(tbl => {
-      if (tbl.closest('.pm-scroll')) return;
-      if (tbl.querySelectorAll('tbody tr').length <= 5) return;
-      const wrap = document.createElement('div');
-      wrap.className = 'pm-scroll';
-      tbl.parentNode.insertBefore(wrap, tbl);
-      wrap.appendChild(tbl);
+      if (tbl.closest('.pm-scroll')) return; if (tbl.querySelectorAll('tbody tr').length <= 5) return;
+      const wrap = document.createElement('div'); wrap.className = 'pm-scroll'; tbl.parentNode.insertBefore(wrap, tbl); wrap.appendChild(tbl);
     });
   }
-
   const _oldRender = window.renderDashboard;
   if (_oldRender && !_oldRender._pmClean) {
-    const _newRender = function () {
-      if (window.reports) window.reports.forEach(r => { if (r && typeof r.date === 'string') r.date = cleanDate(r.date); });
-      _oldRender.apply(this, arguments);
-      setTimeout(polish, 100);
-      setTimeout(polish, 500);
-    };
-    _newRender._pmClean = true;
-    window.renderDashboard = _newRender;
+    const _newRender = function () { if (window.reports) window.reports.forEach(r => { if (r && typeof r.date === 'string') r.date = cleanDateP0(r.date); }); _oldRender.apply(this, arguments); setTimeout(polishP0, 100); };
+    _newRender._pmClean = true; window.renderDashboard = _newRender;
   }
-  document.addEventListener('click', () => setTimeout(polish, 400));
-  setTimeout(polish, 600);
-
-  // Hien TK tu Sheet len Cai dat
-  async function syncSheetToSettings() {
+  let synced = false;
+  async function syncSheetToSettingsP0() {
+    if (synced) return;
     try {
-      const res = await fetch(CFG.SHEET_CSV, { cache: 'no-store' });
-      const text = await res.text();
-      const lines = text.split('\n').slice(1).filter(l => l.trim());
-      const users = lines.map(l => l.split(',')[0].trim()).filter(Boolean);
-      const listBox = [...document.querySelectorAll('*')].find(el => (el.textContent || '').trim() === 'Danh sách Team Lead');
-      if (!listBox) return;
-      const container = listBox.parentElement;
-      if (container && users.length > 0) {
-        const exist = [...container.querySelectorAll('*')].map(e => e.textContent.trim());
-        users.forEach(u => {
-          if (exist.includes(u)) return;
-          const div = document.createElement('div');
-          div.style.cssText = 'padding:10px 12px;margin-top:8px;border-radius:10px;background:rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;';
-          div.innerHTML = '<span><b>' + u + '</b><br><small style="opacity:.7">Từ Sheet Taikhoan</small></span><span style="font-size:12px;padding:4px 8px;border-radius:20px;background:#1e7a3c;color:#fff">Hoạt động</span>';
-          container.appendChild(div);
-        });
-      }
+      const res = await fetch(CFG_P0.SHEET_CSV, { cache: 'no-store' }); const text = await res.text();
+      const lines = text.split('\n').slice(1).filter(l => l.trim()); const users = lines.map(l => l.split(',')[0].trim()).filter(Boolean);
+      const listBox = [...document.querySelectorAll('*')].find(el => (el.textContent || '').trim() === 'Danh sách Team Lead'); if (!listBox) return;
+      const container = listBox.parentElement; if (!container) return;
+      [...container.querySelectorAll('*')].forEach(el => { if (el.children.length === 0 && el.textContent.trim() === 'Chưa có tài khoản nào') el.remove(); });
+      container.querySelectorAll('[data-pm-sheet-user]').forEach(el => el.remove());
+      users.forEach(u => {
+        const div = document.createElement('div'); div.setAttribute('data-pm-sheet-user', u);
+        div.style.cssText = 'padding:10px 12px;margin-top:8px;border-radius:10px;background:rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;';
+        div.innerHTML = '<span><b>' + u + '</b><br><small style="opacity:.7">Từ Sheet Taikhoan</small></span><span><button data-act="reset" data-user="' + u + '" style="margin-right:6px;padding:4px 8px;border-radius:8px;border:0;background:#e8a020;color:#fff;cursor:pointer">Cấp lại MK</button><button data-act="del" data-user="' + u + '" style="padding:4px 8px;border-radius:8px;border:0;background:#c0392b;color:#fff;cursor:pointer">Xóa</button></span>';
+        container.appendChild(div);
+      }); synced = true;
     } catch (e) {}
   }
-  setInterval(() => {
-    if ((document.body.innerText || '').includes('Danh sách Team Lead')) syncSheetToSettings();
-  }, 2000);
+  const obs2 = new MutationObserver(() => { if ((document.body.innerText || '').includes('Danh sách Team Lead')) syncSheetToSettingsP0(); });
+  obs2.observe(document.body, { childList: true, subtree: true });
 })();
