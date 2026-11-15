@@ -144,44 +144,61 @@ async function pullReports(show) {
 }
 document.getElementById('btnSync')?.addEventListener('click', () => pullReports(false));
 
-// ===== 3. THEM TEAM LEAD TU CAI DAT -> DAY LEN SHEET TAIKHOAN (GIU NGUYEN LINK GOC) =====
-(function hookAddAccount() {
+// ===== 3. THEM TEAM LEAD - LAY DUNG O TEN + MAT KHAU, KHONG CHAN PHAN QUYEN =====
+(function hookAddCorrect() {
+  const ADD_URL = 'https://script.google.com/macros/s/AKfycbyaIg0TSyZ1EuhqFg8fT2EncxAwyinZ2qBVbRPYS3YLKYE07uvwXFaPZvdepdV9gDUf/exec';
+  function findUserPass(btn) {
+    let box = btn.closest('div');
+    for (let i = 0; i < 6 && box; i++) {
+      const txt = (box.innerText || '');
+      if (txt.includes('Team Lead') && box.querySelectorAll('input').length >= 2) break;
+      box = box.parentElement;
+    }
+    if (!box) box = document.body;
+    const all = [...box.querySelectorAll('input')].filter(el => el.offsetParent !== null);
+    const filtered = all.filter(el => el.value !== 'Davson267' && !String(el.value || '').includes('script.google'));
+    let userEl = filtered.find(el => {
+      const lb = (el.closest('label')?.innerText || '') + ' ' + (el.placeholder || '') + ' ' + (el.previousElementSibling?.innerText || '');
+      return lb.toLowerCase().includes('tên') || lb.toLowerCase().includes('tài khoản') || lb.toLowerCase().includes('team lead');
+    });
+    let passEl = filtered.find(el => el.type === 'password');
+    if (!userEl) userEl = filtered.find(el => el.type === 'text');
+    if (!passEl) passEl = filtered[1];
+    return { userEl, passEl };
+  }
   function hookAdd() {
     const btn = [...document.querySelectorAll('button')].find(b => (b.textContent || '').trim() === 'Thêm Team Lead');
-    if (!btn || btn._pmHooked) return;
-    btn._pmHooked = true;
+    if (!btn || btn._pmHooked3) return;
+    btn._pmHooked3 = true;
     btn.addEventListener('click', async (ev) => {
-      ev.preventDefault(); ev.stopPropagation();
-      const wrap = btn.closest('div')?.parentElement || document.body;
-      const inputs = [...wrap.querySelectorAll('input')].filter(el => el.offsetParent !== null && (el.type === 'text' || el.type === 'password'));
-      const user = (inputs[0]?.value || '').trim();
-      const pass = inputs[1]?.value || '';
-      if (!user || !pass) { alert('❌ Nhập tên tài khoản và mật khẩu'); return; }
+      const { userEl, passEl } = findUserPass(btn);
+      const user = (userEl?.value || '').trim();
+      const pass = passEl?.value || '';
+      if (user === 'Davson267' || user.includes('script.google')) { alert('❌ Lấy nhầm ô Token, bạn nhập lại Tên tài khoản ở ô Tạo Team Lead'); return; }
+      if (!user || !pass) { alert('❌ Nhập tên tài khoản và mật khẩu ở ô Tạo Team Lead'); return; }
       const hash = await sha256(user, pass);
       const q = new URLSearchParams({
-        mode: 'addAccount', token: CFG.TOKEN, user, hash,
+        mode: 'addAccount', token: 'Davson267', user, hash,
         DASH: 'true', REPORT: 'true', PERF: 'true', ORDERS: 'true', HARNESS: 'true',
         EXPORT: 'false', DEL: 'false', HEDIT: 'false'
       });
-      btn.textContent = 'Đang lưu...'; btn.disabled = true;
+      btn.textContent = 'Đang lưu lên Sheet...'; btn.disabled = true;
       try {
-        const res = await fetch(CFG.ADD_ACCOUNT_URL + '?' + q.toString());
+        const res = await fetch(ADD_URL + '?' + q.toString());
         const j = await res.json();
         if (!j.ok) throw new Error(j.error || 'Không lưu được');
-        alert('✅ Đã thêm tài khoản ' + user + ' vào Sheet Taikhoan. Team Lead có thể đăng nhập ngay!');
-        if (inputs[0]) inputs[0].value = '';
-        if (inputs[1]) inputs[1].value = '';
-        try { localStorage.removeItem('pm_team_accounts'); } catch (e) {}
+        alert('✅ Đã thêm ' + user + ' lên Sheet Taikhoan!');
+        if (userEl) userEl.value = '';
+        if (passEl) passEl.value = '';
       } catch (e) {
-        alert('❌ Chưa thêm được: ' + e.message);
+        alert('❌ Chưa đẩy lên Sheet được: ' + e.message);
       } finally {
         btn.textContent = 'Thêm Team Lead'; btn.disabled = false;
       }
-    }, true);
+    });
   }
   setInterval(hookAdd, 1000);
 })();
-
 // ===== 4. TU DONG CAU HINH + TU QUA THIET LAP + GON BANG + HIEN TK SHEET LEN CAI DAT =====
 (function autoConfig() {
   try {
