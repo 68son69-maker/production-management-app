@@ -5,10 +5,9 @@
     const link = all.find(e => (e.value || '').includes('script.google.com'));
     if (!link) return;
     link.style.display = 'none';
-    link.type = 'hidden';
     const idx = all.indexOf(link);
     const token = all[idx + 1];
-    if (token) { token.style.display = 'none'; token.type = 'hidden'; }
+    if (token) { token.style.display = 'none'; }
     document.querySelectorAll('label').forEach(lb => {
       if (lb.textContent.includes('Link Web App') || lb.textContent.includes('Mã bảo vệ')) lb.style.display = 'none';
     });
