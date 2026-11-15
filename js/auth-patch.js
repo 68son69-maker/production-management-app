@@ -250,4 +250,27 @@ document.getElementById('btnSync')?.addEventListener('click', () => pullReportsP
   }
   const obs2 = new MutationObserver(() => { if ((document.body.innerText || '').includes('Danh sách Team Lead')) syncSheetToSettingsP0(); });
   obs2.observe(document.body, { childList: true, subtree: true });
+})();// P0 - Chan man hinh Thiet lap Admin hien lai tren may moi
+(function fixSetupLoop() {
+  // Neu dang o man hinh Thiet lap, tu dong dien 12345 va tu bam nut
+  const obs = new MutationObserver(() => {
+    const btn = [...document.querySelectorAll('button')].find(b => (b.textContent || '').trim() === 'Tạo mật khẩu & vào app');
+    if (!btn) return;
+    // Chi tu dong 1 lan, khong lap lai
+    if (btn._auto) return;
+    btn._auto = true;
+    const inputs = [...document.querySelectorAll('input[type="password"]')].filter(el => el.offsetParent !== null);
+    if (inputs.length >= 2 && !inputs[0].value) {
+      inputs[0].value = '12345';
+      inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+      inputs[1].value = '12345';
+      inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
+      // Khong tu bam, de ban tu bam cho chac, chi hien thong bao
+      const note = document.createElement('div');
+      note.style.cssText = 'margin-top:10px;padding:10px;border-radius:10px;background:rgba(255,193,7,.2);color:#fff;font-size:13px;text-align:center';
+      note.textContent = 'Máy mới - Bạn bấm nút xanh bên dưới để vào app với mật khẩu Admin mặc định 12345';
+      btn.parentElement.insertBefore(note, btn);
+    }
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
 })();
