@@ -19,7 +19,7 @@
       d.style.cssText = 'padding:10px;border-radius:10px;background:rgba(0,200,100,.15);color:#fff;font-size:13px;margin:10px 0;text-align:center';
       d.textContent = '✅ App đã tự lấy Link + Token rồi, bạn không cần nhập gì nữa.';
       const btn = box.querySelector('button');
-      if (btn) box.insertBefore(d, btn); else box.appendChild(d);
+      box.appendChild(d);
     }
   }
   const obs1 = new MutationObserver(() => anLinkToken());
@@ -80,4 +80,56 @@
       setTimeout(keo, 500);
     }
   });
+})();// 4. CUON RIENG CHO TAB DON HANG - 1 DON HANG = 2 DONG NEN PHAI TINH RIENG
+(function cuonDonHang() {
+  function lam() {
+    document.querySelectorAll('table').forEach(tbl => {
+      const text = tbl.innerText || '';
+      // Chi lam cho bang Don hang: co chu FPNR + MONT + PRUEF
+      if (!text.includes('FPNR') || !text.includes('MONT')) return;
+      if (tbl.closest('.pm-scroll-donhang')) return;
+      // Tim khung chua bang
+      let wrap = tbl.parentElement;
+      // Tao khung cuon rieng cho Don hang
+      const div = document.createElement('div');
+      div.className = 'pm-scroll-donhang';
+      div.style.cssText = 'max-height:210px !important; overflow-y:auto !important; overflow-x:auto !important; display:block !important; border-radius:10px;';
+      tbl.parentNode.insertBefore(div, tbl);
+      div.appendChild(tbl);
+      // Cho dong tieu de dinh o tren khi cuon
+      tbl.querySelectorAll('thead th').forEach(th => {
+        th.style.position = 'sticky';
+        th.style.top = '0';
+        th.style.zIndex = '3';
+        th.style.background = '#1a2a3a';
+      });
+      // Cho dong Tong dinh o duoi khi cuon
+      const rows = tbl.querySelectorAll('tbody tr, tfoot tr, tr');
+      rows.forEach(tr => {
+        if ((tr.innerText || '').includes('Tổng')) {
+          tr.querySelectorAll('td, th').forEach(td => {
+            td.style.position = 'sticky';
+            td.style.bottom = '0';
+            td.style.zIndex = '3';
+            td.style.background = '#1a2a3a';
+            td.style.fontWeight = 'bold';
+          });
+        }
+      });
+    });
+    // Them CSS cuon cho Don hang
+    if (!document.getElementById('css-donhang')) {
+      const st = document.createElement('style');
+      st.id = 'css-donhang';
+      st.textContent = '.pm-scroll-donhang::-webkit-scrollbar{width:6px;height:6px} .pm-scroll-donhang::-webkit-scrollbar-thumb{background:#3a4a5a;border-radius:10px} .pm-scroll-donhang table{width:100% !important;}';
+      document.head.appendChild(st);
+    }
+  }
+  // Chay ngay + chay lai khi ban doi Line / loc / chuyen tab
+  lam();
+  setTimeout(lam, 1000);
+  setTimeout(lam, 2000);
+  const obs = new MutationObserver(() => lam());
+  obs.observe(document.body, { childList: true, subtree: true });
+  document.addEventListener('click', () => setTimeout(lam, 500));
 })();
