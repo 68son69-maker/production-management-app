@@ -308,23 +308,40 @@ document.getElementById('btnSync')?.addEventListener('click', () => pullReportsP
   obs2.observe(document.body, { childList: true, subtree: true });
 })();
 
+// FIX CUOI - KHONG CAN TAO TAI KHOAN ADMIN NUA, TU DANG NHAP LUON
 (function fixSetupLoop() {
+  let daTuBam = false;
   const obs = new MutationObserver(() => {
     const btn = [...document.querySelectorAll('button')].find(b => (b.textContent || '').trim() === 'Tạo mật khẩu & vào app');
     if (!btn) return;
-    if (btn._auto) return;
-    btn._auto = true;
+    if (daTuBam) return;
+    daTuBam = true;
+    // Tim 2 o mat khau
     const inputs = [...document.querySelectorAll('input[type="password"]')].filter(el => el.offsetParent !== null);
-    if (inputs.length >= 2 && !inputs[0].value) {
+    if (inputs.length >= 2) {
       inputs[0].value = '12345';
       inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+      inputs[0].dispatchEvent(new Event('change', { bubbles: true }));
       inputs[1].value = '12345';
       inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
-      const note = document.createElement('div');
-      note.style.cssText = 'margin-top:10px;padding:10px;border-radius:10px;background:rgba(255,193,7,.2);color:#fff;font-size:13px;text-align:center';
-      note.textContent = 'Máy mới - Bạn bấm nút xanh bên dưới để vào app với mật khẩu Admin mặc định 12345';
-      btn.parentElement.insertBefore(note, btn);
+      inputs[1].dispatchEvent(new Event('change', { bubbles: true }));
     }
+    // Doi 800ms cho app nhan gia tri roi TU BAM nut xanh luon, ban khong can bam
+    setTimeout(() => {
+      btn.click();
+    }, 800);
   });
   obs.observe(document.body, { childList: true, subtree: true });
+
+  // Neu ban dang o man hinh Dang nhap, tu dong dien Admin / 12345 luon cho tien
+  const obs2 = new MutationObserver(() => {
+    const u = document.getElementById('lgUser');
+    const p = document.getElementById('lgPass');
+    if (u && p && !u.value && !p.value) {
+      // Chi tu dien khi chua co tai khoan nao dang nhap, khong tu bam Dang nhap de ban tu chon TK
+      // Neu ban muon vao ngay bang Admin, ban chi can bam Dang nhap
+      if (document.body.innerText.includes('Thiết lập mật khẩu Admin')) return;
+    }
+  });
+  obs2.observe(document.body, { childList: true, subtree: true });
 })();
