@@ -132,4 +132,80 @@
   const obs = new MutationObserver(() => lam());
   obs.observe(document.body, { childList: true, subtree: true });
   document.addEventListener('click', () => setTimeout(lam, 500));
+})();// 5. TACH NHAP LIEU: BAO CAO RIENG + LOI RIENG
+(function tachNhapLieu() {
+  function lam() {
+    const btnLuu = [...document.querySelectorAll('button')].find(b => (b.textContent || '').trim() === 'Lưu báo cáo');
+    if (!btnLuu) return;
+    if (btnLuu.dataset.daTach) return;
+    btnLuu.dataset.daTach = '1';
+    // Doi ten nut cu thanh Luu bao cao rieng
+    btnLuu.textContent = '💾 Lưu báo cáo (không gửi lỗi)';
+    btnLuu.style.background = '#1a8cff';
+    // Tao nut Gui loi rieng ngay duoi nut Luu bao cao
+    const btnLoi = document.createElement('button');
+    btnLoi.type = 'button';
+    btnLoi.textContent = '⚠️ Gửi lỗi riêng (không cần báo cáo)';
+    btnLoi.style.cssText = 'width:100%;margin-top:8px;padding:12px;border-radius:10px;border:0;background:#e8a020;color:#fff;font-weight:bold;cursor:pointer;font-size:15px';
+    btnLuu.parentNode.insertBefore(btnLoi, btnLuu.nextSibling);
+    // Ghi chu cho cong nhan hieu
+    const note = document.createElement('div');
+    note.style.cssText = 'margin-top:6px;font-size:12px;opacity:.7;text-align:center';
+    note.textContent = 'Không có lỗi thì chỉ bấm Lưu báo cáo. Có lỗi mới bấm Gửi lỗi riêng.';
+    btnLoi.parentNode.insertBefore(note, btnLoi.nextSibling);
+
+    btnLoi.addEventListener('click', async () => {
+      // Lay thong tin chung: Ngay, Ca, Line, Team Lead, FPNR tu cac o nhap tren form
+      const getVal = (label) => {
+        const el = [...document.querySelectorAll('input, select')].find(e => {
+          const lb = e.closest('div')?.previousElementSibling?.textContent || '';
+          return (e.placeholder || '').includes(label) || lb.includes(label);
+        });
+        return el ? el.value : '';
+      };
+      const date = document.querySelector('input[type="date"]')?.value || new Date().toISOString().slice(0, 10);
+      const allInputs = [...document.querySelectorAll('input, select')];
+      // Tim o Loi: o co chu Ma loi / Ten loi / So luong loi
+      const allText = document.body.innerText || '';
+      // Lay du lieu loi tu form: tim cac o nhap trong phan 3. Loi
+      const loiSection = [...document.querySelectorAll('*')].find(el => (el.textContent || '').trim().startsWith('3. Lỗi'));
+      let defectData = [];
+      if (loiSection) {
+        const box = loiSection.parentElement;
+        const ins = box ? [...box.querySelectorAll('input, select')] : [];
+        // ins[0]=Nhan vien loi, ins[1]=Ma loi, ins[2]=So luong
+        if (ins.length >= 3) {
+          defectData = [{ worker: ins[0].value || '', name: ins[1].value || '', qty: Number(ins[2].value || 0) || 0 }];
+        }
+      }
+      if (!defectData.length || !defectData[0].qty) {
+        alert('❌ Bạn chưa nhập Số lượng lỗi. Nhập Số lượng rồi mới bấm Gửi lỗi riêng.');
+        return;
+      }
+      const link = (localStorage.getItem('pm_push_url') || '').replace(/"/g, '').trim();
+      const token = (localStorage.getItem('pm_push_token') || '').replace(/"/g, '').trim();
+      if (!link || !token) { alert('❌ Chưa có Link + Token'); return; }
+      btnLoi.textContent = 'Đang gửi lỗi...'; btnLoi.disabled = true;
+      try {
+        const q = new URLSearchParams({
+          mode: 'defect', token,
+          date: date,
+          defectList: JSON.stringify(defectData)
+        });
+        const res = await fetch(link + '?' + q.toString());
+        const j = await res.json();
+        if (!j.ok) throw new Error(j.error || 'Không gửi được');
+        alert('✅ Đã gửi lỗi riêng lên tab Lỗi! Bạn không cần gửi lại báo cáo.');
+      } catch (e) {
+        alert('❌ Chưa gửi lỗi được: ' + e.message);
+      } finally {
+        btnLoi.textContent = '⚠️ Gửi lỗi riêng (không cần báo cáo)';
+        btnLoi.disabled = false;
+      }
+    });
+  }
+  const obs = new MutationObserver(() => lam());
+  obs.observe(document.body, { childList: true, subtree: true });
+  lam();
+  setTimeout(lam, 1000);
 })();
