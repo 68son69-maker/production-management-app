@@ -1,99 +1,18 @@
-// auth-patch.js - BAN TOI UU: 1 file duy nhat, khong de chong cheo
-// Chuc nang: 1. Dang nhap Team Lead qua Sheet | 2. Tu co Link + Token + Mat khau Admin | 3. Tu keo bao cao | 4. Gon bang 5 dong + Sua ngay
+// auth-patch.js - BAN TOI UU CUOI CUNG - 1 FILE DUY NHAT
+// Link da chot, khong doi nua:
+// - Sheet Taikhoan (doc): pub?output=csv
+// - Web App Taikhoan (them TK): [STRIPPED 72 bytes]
+// - Web App Bao cao (keo bao cao): [STRIPPED 74 bytes]
 
-// ===== 1. DANG NHAP =====
-(async () => {
-  const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSMJYnJ9kIR3DBgEQOag2Sk4ERaa5g9pRgoktySd2wMTvr8er8dfnt-UK6lsJnnp37SERJFVdV1a4h9/pub?output=csv';
+const CFG = {
+  SHEET_CSV: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSMJYnJ9kIR3DBgEQOag2Sk4ERaa5g9pRgoktySd2wMTvr8er8dfnt-UK6lsJnnp37SERJFVdV1a4h9/pub?output=csv',
+  ADD_ACCOUNT_URL: 'https://script.google.com/macros/s/AKfycbyaIg0TSyZ1EuhqFg8fT2EncxAwyinZ2qBVbRPYS3YLKYE07uvwXFaPZvdepdV9gDUf/exec',
+  REPORT_URL: 'https://script.google.com/macros/s/AKfycbwroNbMBO02aibQ7tFZxLKM9Ke1Gbl_OT0icHG8yThfalAVIjDAfX-xpxiX76mPBQI-Iw/exec',
+  TOKEN: 'Davson267',
+  ADMIN_PASS: '12345'
+};
 
-  function parseCSV(t) {
-    t = String(t || '').replace(/^\uFEFF/, '');
-    const rows = []; let r = [], f = '', q = false;
-    for (let i = 0; i < t.length; i++) {
-      const c = t[i];
-      if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
-      else if (c === '"') q = true;
-      else if (c === ',') { r.push(f); f = ''; }
-      else if (c === '\n' || c === '\r') { if (c === '\r' && t[i + 1] === '\n') i++; r.push(f); f = ''; rows.push(r); r = []; }
-      else f += c;
-    }
-    if (f || r.length) { r.push(f); rows.push(r); }
-    return rows;
-  }
-
-  async function loadAccounts() {
-    const res = await fetch(SHEET_URL, { cache: 'no-store' });
-    const text = await res.text();
-    const rows = parseCSV(text);
-    if (rows.length < 2) return [];
-    const head = rows[0].map(x => String(x || '').trim().toUpperCase());
-    const idx = (n) => head.indexOf(n);
-    const iUser = idx('USER'), iHash = idx('HASH'), iBlock = idx('BLOCKED');
-    const list = [];
-    rows.slice(1).forEach(r => {
-      const user = (r[iUser] || '').trim();
-      if (!user) return;
-      const perms = {};
-      ['DASH', 'REPORT', 'PERF', 'ORDERS', 'HARNESS', 'EXPORT', 'DEL', 'HEDIT'].forEach(k => {
-        const ii = idx(k);
-        if (ii >= 0) perms[k.toLowerCase()] = String(r[ii] || '').trim().toUpperCase() === 'TRUE';
-      });
-      list.push({
-        user,
-        hash: String(r[iHash] || '').replace(/[^0-9a-f]/gi, '').toLowerCase().slice(0, 64),
-        blocked: String(r[iBlock] || '').trim().toUpperCase() === 'TRUE',
-        perms
-      });
-    });
-    window.remoteAccounts = list;
-    accounts = list;
-    try { localStorage.setItem('pm_team_accounts', JSON.stringify(list)); } catch (e) {}
-    return list;
-  }
-
-  const oldBtn = document.getElementById('btnLogin');
-  if (oldBtn) {
-    const newBtn = oldBtn.cloneNode(true);
-    oldBtn.parentNode.replaceChild(newBtn, oldBtn);
-    newBtn.addEventListener('click', async () => {
-            // Nếu đang ở màn hình Thiết lập thì xử lý Thiết lập, không chạy code Đăng nhập
-      if ((document.body.innerText || '').includes('Thiết lập mật khẩu Admin')) {
-        const visPass = [...document.querySelectorAll('input[type="password"]')].filter(el => el.offsetParent !== null && getComputedStyle(el).display !== 'none');
-        const p1 = visPass[0]?.value || '';
-        const p2 = visPass[1]?.value || '';
-        const msg2 = document.getElementById('lgMsg');
-        if (!p1 || !p2) { if (msg2) msg2.textContent = '❌ Nhập mật khẩu'; return; }
-        if (p1 !== p2) { if (msg2) msg2.textContent = '❌ 2 mật khẩu không khớp'; return; }
-        const h = await sha256('Admin', p1);
-        store.set('pm_admin_hash', h);
-        location.reload();
-        return;
-      }const u = (document.getElementById('lgUser')?.value || '').trim();
-      const p = document.getElementById('lgPass')?.value || '';
-      const msg = document.getElementById('lgMsg');
-      const setMsg = (t) => { if (msg) msg.textContent = t; };
-      if (!u || !p) return setMsg('❌ Nhập tên tài khoản và mật khẩu');
-      if (/^admin$/i.test(u)) {
-        const h = await sha256('Admin', p);
-        if (h !== store.get('pm_admin_hash', '')) return setMsg('❌ Sai tên tài khoản hoặc mật khẩu');
-        session = { user: 'Admin', role: 'admin' };
-        finishLogin();
-        return;
-      }
-      let accs = [];
-      try { accs = await loadAccounts(); } catch (e) { return setMsg('❌ Không tải được Sheet tài khoản.'); }
-      const a = accs.find(x => x.user.toLowerCase() === u.toLowerCase());
-      if (!a) return setMsg('❌ Tài khoản chưa có. Liên hệ Admin!');
-      if (a.blocked) return setMsg('❌ Tài khoản đã bị chặn.');
-      const h = await sha256(a.user, p);
-      if (h !== a.hash) return setMsg('❌ Sai tên tài khoản hoặc mật khẩu');
-      session = { user: a.user, role: 'lead' };
-      window.__remotePerms = { [a.user]: a.perms };
-      finishLogin();
-    });
-  }
-})();
-
-// ===== 2. KEO BAO CAO + SUA NGAY =====
+// ===== TIEN ICH CHUNG =====
 function cleanDate(d) {
   if (!d) return d;
   const m = String(d).match(/(\d{4})-(\d{2})-(\d{2})/);
@@ -109,9 +28,100 @@ function fmtDateVN(d) {
   if (m) return m[3] + '/' + m[2] + '/' + m[1];
   return c;
 }
+function parseCSV(t) {
+  t = String(t || '').replace(/^\uFEFF/, '');
+  const rows = []; let r = [], f = '', q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { r.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && t[i + 1] === '\n') i++; r.push(f); f = ''; rows.push(r); r = []; }
+    else f += c;
+  }
+  if (f || r.length) { r.push(f); rows.push(r); }
+  return rows;
+}
+
+// ===== 1. DANG NHAP QUA SHEET TAIKHOAN =====
+async function loadAccounts() {
+  const res = await fetch(CFG.SHEET_CSV, { cache: 'no-store' });
+  const text = await res.text();
+  const rows = parseCSV(text);
+  if (rows.length < 2) return [];
+  const head = rows[0].map(x => String(x || '').trim().toUpperCase());
+  const idx = (n) => head.indexOf(n);
+  const iUser = idx('USER'), iHash = idx('HASH'), iBlock = idx('BLOCKED');
+  const list = [];
+  rows.slice(1).forEach(r => {
+    const user = (r[iUser] || '').trim();
+    if (!user) return;
+    const perms = {};
+    ['DASH', 'REPORT', 'PERF', 'ORDERS', 'HARNESS', 'EXPORT', 'DEL', 'HEDIT'].forEach(k => {
+      const ii = idx(k);
+      if (ii >= 0) perms[k.toLowerCase()] = String(r[ii] || '').trim().toUpperCase() === 'TRUE';
+    });
+    list.push({
+      user,
+      hash: String(r[iHash] || '').replace(/[^0-9a-f]/gi, '').toLowerCase().slice(0, 64),
+      blocked: String(r[iBlock] || '').trim().toUpperCase() === 'TRUE',
+      perms
+    });
+  });
+  window.remoteAccounts = list;
+  accounts = list;
+  try { localStorage.setItem('pm_team_accounts', JSON.stringify(list)); } catch (e) {}
+  return list;
+}
+
+(function hookLogin() {
+  const oldBtn = document.getElementById('btnLogin');
+  if (!oldBtn) return;
+  const newBtn = oldBtn.cloneNode(true);
+  oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+  newBtn.addEventListener('click', async () => {
+    // Neu dang o man hinh Thiet lap thi xu ly Thiet lap, khong chay Dang nhap
+    if ((document.body.innerText || '').includes('Thiết lập mật khẩu Admin')) {
+      const visPass = [...document.querySelectorAll('input[type="password"]')].filter(el => el.offsetParent !== null && getComputedStyle(el).display !== 'none');
+      const p1 = visPass[0]?.value || '';
+      const p2 = visPass[1]?.value || '';
+      const msg2 = document.getElementById('lgMsg');
+      if (!p1 || !p2) { if (msg2) msg2.textContent = '❌ Nhập mật khẩu'; return; }
+      if (p1 !== p2) { if (msg2) msg2.textContent = '❌ 2 mật khẩu không khớp'; return; }
+      const h = await sha256('Admin', p1);
+      store.set('pm_admin_hash', h);
+      location.reload();
+      return;
+    }
+    const u = (document.getElementById('lgUser')?.value || '').trim();
+    const p = document.getElementById('lgPass')?.value || '';
+    const msg = document.getElementById('lgMsg');
+    const setMsg = (t) => { if (msg) msg.textContent = t; };
+    if (!u || !p) return setMsg('❌ Nhập tên tài khoản và mật khẩu');
+    if (/^admin$/i.test(u)) {
+      const h = await sha256('Admin', p);
+      if (h !== store.get('pm_admin_hash', '')) return setMsg('❌ Sai tên tài khoản hoặc mật khẩu');
+      session = { user: 'Admin', role: 'admin' };
+      finishLogin();
+      return;
+    }
+    let accs = [];
+    try { accs = await loadAccounts(); } catch (e) { return setMsg('❌ Không tải được Sheet tài khoản.'); }
+    const a = accs.find(x => x.user.toLowerCase() === u.toLowerCase());
+    if (!a) return setMsg('❌ Tài khoản chưa có. Liên hệ Admin!');
+    if (a.blocked) return setMsg('❌ Tài khoản đã bị chặn.');
+    const h = await sha256(a.user, p);
+    if (h !== a.hash) return setMsg('❌ Sai tên tài khoản hoặc mật khẩu');
+    session = { user: a.user, role: 'lead' };
+    window.__remotePerms = { [a.user]: a.perms };
+    finishLogin();
+  });
+})();
+
+// ===== 2. KEO BAO CAO TU FILE BAO CAO SAN XUAT =====
 async function pullReports(show) {
-  const url = store.get('pm_push_url', '');
-  const token = store.get('pm_push_token', '');
+  const url = CFG.REPORT_URL;
+  const token = CFG.TOKEN;
   if (!url) { if (show) alert('Chưa nhập link Web App'); return; }
   try {
     const res = await fetch(url + '?mode=list&token=' + encodeURIComponent(token), { cache: 'no-store' });
@@ -134,29 +144,60 @@ async function pullReports(show) {
 }
 document.getElementById('btnSync')?.addEventListener('click', () => pullReports(false));
 
-// ===== 3. TU DONG CAU HINH + TU QUA THIET LAP + GON BANG - CHI 1 KHOI DUY NHAT =====
-(function () {
-  const DEFAULT_PUSH_URL = 'https://script.google.com/macros/s/AKfycbwroNbMBO02aibQ7tFZxLKM9Ke1Gbl_OT0icHG8yThfalAVIjDAfX-xpxiX76mPBQI-Iw/exec';
-  const DEFAULT_TOKEN = 'Davson267';
-  const DEFAULT_ADMIN_PASS = '12345';
+// ===== 3. THEM TEAM LEAD TU CAI DAT -> DAY LEN SHEET TAIKHOAN (GIU NGUYEN LINK GOC) =====
+(function hookAddAccount() {
+  function hookAdd() {
+    const btn = [...document.querySelectorAll('button')].find(b => (b.textContent || '').trim() === 'Thêm Team Lead');
+    if (!btn || btn._pmHooked) return;
+    btn._pmHooked = true;
+    btn.addEventListener('click', async (ev) => {
+      ev.preventDefault(); ev.stopPropagation();
+      const wrap = btn.closest('div')?.parentElement || document.body;
+      const inputs = [...wrap.querySelectorAll('input')].filter(el => el.offsetParent !== null && (el.type === 'text' || el.type === 'password'));
+      const user = (inputs[0]?.value || '').trim();
+      const pass = inputs[1]?.value || '';
+      if (!user || !pass) { alert('❌ Nhập tên tài khoản và mật khẩu'); return; }
+      const hash = await sha256(user, pass);
+      const q = new URLSearchParams({
+        mode: 'addAccount', token: CFG.TOKEN, user, hash,
+        DASH: 'true', REPORT: 'true', PERF: 'true', ORDERS: 'true', HARNESS: 'true',
+        EXPORT: 'false', DEL: 'false', HEDIT: 'false'
+      });
+      btn.textContent = 'Đang lưu...'; btn.disabled = true;
+      try {
+        const res = await fetch(CFG.ADD_ACCOUNT_URL + '?' + q.toString());
+        const j = await res.json();
+        if (!j.ok) throw new Error(j.error || 'Không lưu được');
+        alert('✅ Đã thêm tài khoản ' + user + ' vào Sheet Taikhoan. Team Lead có thể đăng nhập ngay!');
+        if (inputs[0]) inputs[0].value = '';
+        if (inputs[1]) inputs[1].value = '';
+        try { localStorage.removeItem('pm_team_accounts'); } catch (e) {}
+      } catch (e) {
+        alert('❌ Chưa thêm được: ' + e.message);
+      } finally {
+        btn.textContent = 'Thêm Team Lead'; btn.disabled = false;
+      }
+    }, true);
+  }
+  setInterval(hookAdd, 1000);
+})();
 
-  // 3a. Tu dien Link + Token neu may moi chua co
+// ===== 4. TU DONG CAU HINH + TU QUA THIET LAP + GON BANG + HIEN TK SHEET LEN CAI DAT =====
+(function autoConfig() {
   try {
-    if (!store.get('pm_push_url')) store.set('pm_push_url', DEFAULT_PUSH_URL);
-    if (!store.get('pm_push_token')) store.set('pm_push_token', DEFAULT_TOKEN);
+    if (!store.get('pm_push_url')) store.set('pm_push_url', CFG.REPORT_URL);
+    if (!store.get('pm_push_token')) store.set('pm_push_token', CFG.TOKEN);
   } catch (e) {}
 
-  // 3b. Tu tao mat khau Admin neu may moi chua co
   (async () => {
     try {
       if (!store.get('pm_admin_hash')) {
-        const h = await sha256('Admin', DEFAULT_ADMIN_PASS);
+        const h = await sha256('Admin', CFG.ADMIN_PASS);
         store.set('pm_admin_hash', h);
       }
     } catch (e) {}
   })();
 
-  // 3c. Dang nhap xong tu keo du lieu
   const _oldFinish = window.finishLogin;
   if (_oldFinish && !_oldFinish._pmAutoPull) {
     const _newFinish = function () {
@@ -167,7 +208,6 @@ document.getElementById('btnSync')?.addEventListener('click', () => pullReports(
     window.finishLogin = _newFinish;
   }
 
-  // 3d. Tu qua man hinh Thiet lap Admin
   function setVal(input, val) {
     const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
     setter.call(input, val);
@@ -179,8 +219,8 @@ document.getElementById('btnSync')?.addEventListener('click', () => pullReports(
     const inputs = [...document.querySelectorAll('input[type="password"]')].filter(el => el.offsetParent !== null && getComputedStyle(el).display !== 'none');
     const btn = [...document.querySelectorAll('button')].find(b => (b.textContent || '').includes('Tạo mật khẩu') && b.offsetParent !== null);
     if (inputs.length >= 2 && btn) {
-      setVal(inputs[0], DEFAULT_ADMIN_PASS);
-      setVal(inputs[1], DEFAULT_ADMIN_PASS);
+      setVal(inputs[0], CFG.ADMIN_PASS);
+      setVal(inputs[1], CFG.ADMIN_PASS);
       setTimeout(() => btn.click(), 300);
     }
   }
@@ -190,7 +230,6 @@ document.getElementById('btnSync')?.addEventListener('click', () => pullReports(
   }, 500);
   setTimeout(() => clearInterval(setupTimer), 10000);
 
-  // 3e. Gon bang: 5 dong + cuon + sua ngay hien thi
   const st = document.createElement('style');
   st.textContent = '.pm-scroll{max-height:210px!important;overflow-y:auto!important;overflow-x:auto!important;display:block!important;border-radius:10px}.pm-scroll table thead th{position:sticky!important;top:0!important;z-index:2!important;background:#1a2a3a!important}.pm-scroll table tbody tr:nth-child(even){background:rgba(255,255,255,.03)!important}.pm-scroll::-webkit-scrollbar{width:6px;height:6px}.pm-scroll::-webkit-scrollbar-thumb{background:#3a4a5a;border-radius:10px}.pm-sticky-head{position:sticky!important;top:0!important;z-index:2!important;background:#1a2a3a!important}';
   document.head.appendChild(st);
@@ -208,16 +247,6 @@ document.getElementById('btnSync')?.addEventListener('click', () => pullReports(
       tbl.parentNode.insertBefore(wrap, tbl);
       wrap.appendChild(tbl);
     });
-    document.querySelectorAll('*').forEach(el => {
-      if (el.children.length !== 0) return;
-      if (el.textContent.trim() !== 'PPM ngày' && el.textContent.trim() !== 'PPM lũy kế') return;
-      const headerRow = el.parentElement;
-      const grid = headerRow ? headerRow.parentElement : null;
-      if (!grid || grid.classList.contains('pm-scroll')) return;
-      if (grid.children.length <= 6) return;
-      if (headerRow) headerRow.classList.add('pm-sticky-head');
-      grid.classList.add('pm-scroll');
-    });
   }
 
   const _oldRender = window.renderDashboard;
@@ -233,4 +262,30 @@ document.getElementById('btnSync')?.addEventListener('click', () => pullReports(
   }
   document.addEventListener('click', () => setTimeout(polish, 400));
   setTimeout(polish, 600);
+
+  // Hien TK tu Sheet len Cai dat
+  async function syncSheetToSettings() {
+    try {
+      const res = await fetch(CFG.SHEET_CSV, { cache: 'no-store' });
+      const text = await res.text();
+      const lines = text.split('\n').slice(1).filter(l => l.trim());
+      const users = lines.map(l => l.split(',')[0].trim()).filter(Boolean);
+      const listBox = [...document.querySelectorAll('*')].find(el => (el.textContent || '').trim() === 'Danh sách Team Lead');
+      if (!listBox) return;
+      const container = listBox.parentElement;
+      if (container && users.length > 0) {
+        const exist = [...container.querySelectorAll('*')].map(e => e.textContent.trim());
+        users.forEach(u => {
+          if (exist.includes(u)) return;
+          const div = document.createElement('div');
+          div.style.cssText = 'padding:10px 12px;margin-top:8px;border-radius:10px;background:rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;';
+          div.innerHTML = '<span><b>' + u + '</b><br><small style="opacity:.7">Từ Sheet Taikhoan</small></span><span style="font-size:12px;padding:4px 8px;border-radius:20px;background:#1e7a3c;color:#fff">Hoạt động</span>';
+          container.appendChild(div);
+        });
+      }
+    } catch (e) {}
+  }
+  setInterval(() => {
+    if ((document.body.innerText || '').includes('Danh sách Team Lead')) syncSheetToSettings();
+  }, 2000);
 })();
