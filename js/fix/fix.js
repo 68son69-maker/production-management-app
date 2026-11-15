@@ -98,6 +98,55 @@
   if (saveBtn) saveBtn.addEventListener('click', () => setTimeout(() => pullWhenSent(0), 1500));
 
   cleanGhost();
-  setupButton();
+  setupButton();  // ---------- 5. Moi danh sach chi hien ~5 dong, con lai cuon len xuong ----------
+  const LIM_ROWS = 5;   // <-- doi so nay neu muon hien nhieu hoac it dong hon
+  (function () {
+    const st = document.createElement('style');
+    st.textContent =
+      '.pm-lim{overflow-y:auto!important;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-right:4px;scrollbar-width:thin;scrollbar-color:#3a5a7a transparent}' +
+      '.pm-limt{overflow-y:auto!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#3a5a7a transparent}' +
+      '.pm-lim::-webkit-scrollbar,.pm-limt::-webkit-scrollbar{width:6px;height:6px}' +
+      '.pm-lim::-webkit-scrollbar-thumb,.pm-limt::-webkit-scrollbar-thumb{background:#3a5a7a;border-radius:10px}' +
+      '.pm-limt thead th{position:sticky;top:0;z-index:3;background:#1a2a3a}';
+    document.head.appendChild(st);
+
+    function limit(el, items, extra, cls) {
+      if (items.length <= LIM_ROWS) {
+        el.style.removeProperty('max-height');
+        el.classList.remove(cls);
+        return;
+      }
+      const a = items[0].getBoundingClientRect();
+      const b = items[LIM_ROWS - 1].getBoundingClientRect();
+      const h = Math.round(b.bottom - a.top + (extra || 0)) + 2;
+      if (!(h > 20)) return;                      // dang bi an thi bo qua
+      el.classList.add(cls);
+      el.style.setProperty('max-height', h + 'px', 'important');
+    }
+
+    function apply() {
+      // a) Danh sach "Theo doi da nhap" (cac the bao cao)
+      const trk = document.getElementById('trkList');
+      if (trk) limit(trk, [...trk.children].filter(c => c.classList.contains('hcard')), 0, 'pm-lim');
+
+      // b) Cac bang du lieu (Dashboard, PPM, don hang...)
+      document.querySelectorAll('.table-wrap table').forEach(t => {
+        const box = t.closest('.pm-scroll') || t.closest('.table-wrap');
+        if (!box) return;
+        const items = t.classList.contains('ot')
+          ? [...t.tBodies]                                            // bang don hang: moi don = 1 khoi
+          : [...t.tBodies].flatMap(tb => [...tb.rows]).filter(r => !r.querySelector('td.empty'));
+        const head = t.tHead ? t.tHead.getBoundingClientRect().height : 0;
+        limit(box, items, head, 'pm-limt');
+      });
+    }
+
+    let tm = 0;
+    const sched = () => { clearTimeout(tm); tm = setTimeout(apply, 300); };
+    new MutationObserver(sched).observe(document.body, { childList: true, subtree: true });
+    document.addEventListener('click', sched);
+    window.addEventListener('resize', sched);
+    sched();
+  })();
   console.log('[FIX] fix.js v3 da nap');
 })();
