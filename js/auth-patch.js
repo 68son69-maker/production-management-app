@@ -1,5 +1,5 @@
-// auth-patch.js - BAN SACH CUOI - P0 + P1 TU DONG CONFIG - KHONG CAN NHAP LINK + TOKEN
-// App tu lay config.json tu GitHub, may nao mo len cung tu co Link + Token
+// auth-patch.js - BAN SACH CUOI CUNG - P0 + P1 - CHI CAN DAN 1 LAN, KHONG SUA LE TE NUA
+// Tu dong lay Link + Token, khong can nhap tay, may nao mo len cung chay
 
 const CFG_P0 = {
   SHEET_CSV: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSMJYnJ9kIR3DBgEQOag2Sk4ERaa5g9pRgoktySd2wMTvr8er8dfnt-UK6lsJnnp37SERJFVdV1a4h9/pub?output=csv',
@@ -8,63 +8,79 @@ const CFG_P0 = {
   SALT: 'DAVSON-2026-'
 };
 
-// ===== P1 - TU DONG LAY CONFIG TU GITHUB =====
-let CFG_AUTO = null;
+// ===== CAU HINH MAC DINH - CO NGAY KHI MO APP, KHONG DOI TAI config.json =====
+let CFG_AUTO = {
+  reportUrl: "https://script.google.com/macros/s/AKfycbwroNbMBO02aibQ7tFZxLKM9Ke1Gbl_OT0icHG8yThfalAVIjDAfX-xpxiX76mPBQI-Iw/exec",
+  accountUrl: "https://script.google.com/macros/s/AKfycbyaIg0TSyZ1EuhqFg8fT2EncxAwyinZ2qBVbRPYS3YLKYE07uvwXFaPZvdepdV9gDUf/exec",
+  token: "Davson-2026-9f8K2mQ7xZ4pL1w"
+};
+
+function saveConfigToStore() {
+  try {
+    localStorage.setItem('pm_push_url', CFG_AUTO.reportUrl || '');
+    localStorage.setItem('pm_push_token', CFG_AUTO.token || '');
+    localStorage.setItem('pm_add_account_url', CFG_AUTO.accountUrl || '');
+    if (window.store) {
+      store.set('pm_push_url', CFG_AUTO.reportUrl || '');
+      store.set('pm_push_token', CFG_AUTO.token || '');
+      store.set('pm_add_account_url', CFG_AUTO.accountUrl || '');
+    }
+  } catch (e) {}
+}
+// Luu ngay de core.js dung duoc luon, khong can doi fetch
+saveConfigToStore();
+
 async function loadConfigAuto() {
-  if (CFG_AUTO) return CFG_AUTO;
   try {
     const res = await fetch('./config.json', { cache: 'no-store' });
-    const j = await res.json();
-    CFG_AUTO = j;
-    try {
-      localStorage.setItem('pm_push_url', j.reportUrl || '');
-      localStorage.setItem('pm_push_token', j.token || '');
-      localStorage.setItem('pm_add_account_url', j.accountUrl || '');
-      if (window.store) {
-        store.set('pm_push_url', j.reportUrl || '');
-        store.set('pm_push_token', j.token || '');
-        store.set('pm_add_account_url', j.accountUrl || '');
-      }
-    } catch (e) {}
-    return CFG_AUTO;
-  } catch (e) { return null; }
+    if (res.ok) {
+      const j = await res.json();
+      if (j.reportUrl) CFG_AUTO = j;
+      saveConfigToStore();
+    }
+  } catch (e) {}
+  return CFG_AUTO;
 }
 loadConfigAuto();
 
+// ===== AN 2 O LINK + TOKEN - TIM THEO O NHAP, KHONG TIM THEO TIEU DE =====
 (function hideLinkTokenInputs() {
   const obs = new MutationObserver(() => {
-    const title = [...document.querySelectorAll('*')].find(el => el.children.length === 0 && (el.textContent || '').trim() === 'Đẩy dữ liệu về Google Sheets của Admin');
-    if (!title) return;
-    let box = title.parentElement;
-    const inputs = box.querySelectorAll('input');
-    inputs.forEach(inp => { inp.style.display = 'none'; });
+    const linkInput = [...document.querySelectorAll('input')].find(el => (el.placeholder || '').includes('script.google.com/macros'));
+    const tokenInput = [...document.querySelectorAll('input')].find(el => (el.placeholder || '').includes('TOKEN trong Apps Script'));
+    if (!linkInput && !tokenInput) return;
+    let box = linkInput || tokenInput;
+    for (let i = 0; i < 5 && box.parentElement; i++) {
+      box = box.parentElement;
+      if (box.querySelectorAll('input').length >= 2) break;
+    }
+    if (!box) return;
+    if (linkInput) linkInput.style.display = 'none';
+    if (tokenInput) tokenInput.style.display = 'none';
+    box.querySelectorAll('label').forEach(lb => {
+      if (lb.textContent.includes('Link Web App') || lb.textContent.includes('Mã bảo vệ')) lb.style.display = 'none';
+    });
     if (!box.querySelector('[data-auto-config-note]')) {
       const note = document.createElement('div');
       note.setAttribute('data-auto-config-note', '1');
       note.style.cssText = 'padding:10px;border-radius:10px;background:rgba(0,200,100,.15);color:#fff;font-size:13px;margin:10px 0;text-align:center';
       note.textContent = '✅ App đã tự lấy Link + Token từ hệ thống, bạn không cần nhập gì nữa.';
-      box.insertBefore(note, box.querySelector('button') || box.firstChild);
+      const btn = box.querySelector('button');
+      if (btn) box.insertBefore(note, btn); else box.appendChild(note);
     }
-    box.querySelectorAll('label').forEach(lb => { if (lb.textContent.includes('Link Web App') || lb.textContent.includes('Mã bảo vệ')) lb.style.display = 'none'; });
+    box.querySelectorAll('*').forEach(el => {
+      if (el.children.length === 0 && el.textContent.includes('chưa nhập link Web App')) {
+        el.textContent = '✅ Đã sẵn sàng gửi - App tự lấy Link + Token rồi.';
+      }
+    });
   });
   obs.observe(document.body, { childList: true, subtree: true });
 })();
 
-// ===== CHI CO 1 BO HAM LAY LINK / TOKEN - KHONG TRUNG NUA =====
-function getTokenP0() {
-  if (CFG_AUTO && CFG_AUTO.token) return CFG_AUTO.token;
-  return store.get(CFG_P0.TOKEN_KEY, '') || localStorage.getItem('pm_push_token') || '';
-}
-function getReportUrlP0() {
-  if (CFG_AUTO && CFG_AUTO.reportUrl) return CFG_AUTO.reportUrl;
-  return store.get('pm_push_url', '') || localStorage.getItem('pm_push_url') || '';
-}
-function getAddUrlP0() {
-  if (CFG_AUTO && CFG_AUTO.accountUrl) return CFG_AUTO.accountUrl;
-  let u = store.get('pm_add_account_url', '') || localStorage.getItem('pm_add_account_url') || '';
-  if (!u) u = 'https://script.google.com/macros/s/AKfycbyaIg0TSyZ1EuhqFg8fT2EncxAwyinZ2qBVbRPYS3YLKYE07uvwXFaPZvdepdV9gDUf/exec';
-  return u;
-}
+// ===== LAY LINK / TOKEN - LUON CO GIA TRI, KHONG BAO GIO RONG =====
+function getTokenP0() { return CFG_AUTO.token || store.get(CFG_P0.TOKEN_KEY, '') || localStorage.getItem('pm_push_token') || ''; }
+function getReportUrlP0() { return CFG_AUTO.reportUrl || store.get('pm_push_url', '') || localStorage.getItem('pm_push_url') || ''; }
+function getAddUrlP0() { return CFG_AUTO.accountUrl || store.get('pm_add_account_url', '') || localStorage.getItem('pm_add_account_url') || CFG_AUTO.accountUrl; }
 
 function cleanDateP0(d) {
   if (!d) return d;
@@ -177,9 +193,8 @@ async function loadAccountsP0() {
 })();
 
 async function pullReportsP0(show) {
-  await loadConfigAuto();
   const url = getReportUrlP0(); const token = getTokenP0();
-  if (!url) { if (show) alert('Chưa có config.json'); return; }
+  if (!url) { if (show) alert('Chưa có Link Báo cáo'); return; }
   try {
     const res = await fetch(url + '?mode=list&token=' + encodeURIComponent(token), { cache: 'no-store' });
     const j = await res.json();
@@ -209,11 +224,10 @@ document.getElementById('btnSync')?.addEventListener('click', () => pullReportsP
     hooked = true;
     btn.addEventListener('click', async (ev) => {
       ev.preventDefault();
-      await loadConfigAuto();
       const user = (userEl.value || '').trim(); const pass = passEl.value || '';
       const addUrl = getAddUrlP0(); const token = getTokenP0();
       if (!user || !pass) { alert('❌ Nhập tên tài khoản và mật khẩu ở ô Tạo Team Lead'); return; }
-      if (!addUrl || !token) { alert('❌ Chưa có config.json, kiểm tra file config.json trên GitHub'); return; }
+      if (!addUrl || !token) { alert('❌ Chưa có Link Taikhoan'); return; }
       if (user === token || user.includes('script.google')) { alert('❌ Bạn nhập nhầm ô Token'); return; }
       const hash = await hashWithSaltP0(user, pass);
       const q = new URLSearchParams({ mode: 'addAccount', token, user, hash, DASH: 'true', REPORT: 'true', PERF: 'true', ORDERS: 'true', HARNESS: 'true', EXPORT: 'false', DEL: 'false', HEDIT: 'false' });
@@ -232,9 +246,8 @@ document.getElementById('btnSync')?.addEventListener('click', () => pullReportsP
   document.addEventListener('click', async (e) => {
     const btn = e.target.closest('button[data-act]'); if (!btn) return;
     const user = btn.dataset.user; const act = btn.dataset.act;
-    await loadConfigAuto();
     const addUrl = getAddUrlP0(); const token = getTokenP0();
-    if (!addUrl || !token) { alert('❌ Chưa có config.json'); return; }
+    if (!addUrl || !token) { alert('❌ Chưa có Link Taikhoan'); return; }
     if (act === 'del') {
       if (!confirm('Xóa tài khoản ' + user + ' ?')) return;
       const q = new URLSearchParams({ mode: 'deleteAccount', token, user });
