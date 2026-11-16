@@ -6,18 +6,20 @@
     console.error('[repser] thiếu hàm gốc hoặc series.js chưa nạp'); return;
   }
   window.__repSer = 1;
-  const AUTO = 'pm_auto_mont';
 
-  /* ---- Ô Series + PRUEF trong form báo cáo ---- */
+  /* ---- Ô Series + MONT + PRUEF trong form báo cáo ---- */
   $('repFpnr').closest('.field').insertAdjacentHTML('afterend',
     '<div class="field"><label for="repSeries">Series đang chạy <span id="repSerInfo" style="color:#cfe2ff"></span></label>' +
     '<select id="repSeries"></select>' +
-    '<div class="hint" id="repSerProg" style="margin-top:6px"></div>' +
-    '<label class="chk" style="margin-top:8px"><input type="checkbox" id="repAutoMont"> Tự cộng "Thực tế" vào tiến độ MONT của đơn</label></div>' +
-    '<div class="field"><label for="repPr">PRUEF đã test (bộ) <small style="color:#9fb3c8">· tự cộng vào tiến độ PRUEF của Series</small></label>' +
-    '<input id="repPr" type="number" inputmode="numeric" min="0" value="0"></div>');
-  $('repAutoMont').checked = !!store.get(AUTO, false);
-  $('repAutoMont').addEventListener('change', e => store.set(AUTO, e.target.checked));
+    '<div class="hint" id="repSerProg" style="margin-top:6px"></div></div>' +
+    '<div class="row2">' +
+    '<div class="field"><label for="repMont">MONT đã lắp (bộ)</label><input id="repMont" type="number" inputmode="numeric" min="0" value="0"></div>' +
+    '<div class="field"><label for="repPr">PRUEF đã test (bộ)</label><input id="repPr" type="number" inputmode="numeric" min="0" value="0"></div>' +
+    '</div>' +
+    '<button class="btn secondary" id="repMontFill" type="button" style="min-height:36px;margin:-4px 0 10px">MONT = Thực tế</button>' +
+    '<div class="hint" style="margin-top:-4px">MONT và PRUEF được cộng vào tiến độ của Series khi bấm "Lưu báo cáo". Để 0 nếu chưa có.</div>');
+
+  $('repMontFill').addEventListener('click', () => { $('repMont').value = Math.max(0, Math.floor(num($('repActual').value))); });
 
   function syncDef() {
     const d = $('defSer'), v = $('repSeries').value;
@@ -64,18 +66,18 @@
     if (!e.target.closest('#btnSaveReport')) return;
     window.__rs = null;
     const sel = $('repSeries'), raw = sel.value, need = sel.dataset.need === '1';
-    const actual = num($('repActual').value), pr = Math.max(0, Math.floor(num($('repPr').value)));
+    const mont = Math.max(0, Math.floor(num($('repMont').value))), pr = Math.max(0, Math.floor(num($('repPr').value)));
     const stop = msg => { e.stopImmediatePropagation(); e.preventDefault(); flash($('repMsg'), msg, true); };
     if (need && !raw) return stop('❌ Vui lòng chọn Series đang chạy!');
-    if (pr > 0 && !need) return stop('❌ Bộ dây này chưa có đơn hàng nên không ghi được PRUEF. Hãy để PRUEF = 0.');
+    if ((mont > 0 || pr > 0) && !need) return stop('❌ Bộ dây này chưa có đơn hàng nên không ghi được MONT/PRUEF. Hãy để 0.');
     const x = JSON.parse(sel.dataset.info || '{}')[raw] || {};
-    if (x.m != null && actual > x.m && !confirm(`⚠️ Thực tế ${actual} bộ lớn hơn MONT còn lại của Series này (${x.m} bộ). Vẫn lưu?`)) {
+    if (x.m != null && mont > x.m && !confirm(`⚠️ MONT nhập ${mont} lớn hơn số còn lại (${x.m} bộ). Vẫn lưu?`)) {
       e.stopImmediatePropagation(); e.preventDefault(); return;
     }
     if (x.p != null && pr > x.p && !confirm(`⚠️ PRUEF nhập ${pr} lớn hơn số còn lại (${x.p} bộ). Vẫn lưu?`)) {
       e.stopImmediatePropagation(); e.preventDefault(); return;
     }
-    window.__rs = { has: need, series: raw === '-' ? '' : raw, n: reports.length, auto: $('repAutoMont').checked, pr };
+    window.__rs = { has: need, series: raw === '-' ? '' : raw, n: reports.length, mont, pr };
   }, true);
 
   /* Gắn Series vào báo cáo ngay lúc app gốc tạo payload gửi Sheets */
@@ -95,11 +97,8 @@
     const r = reports[reports.length - 1];
     if (s.has && r.series === undefined) r.series = s.series;
     store.set('pm_prod_reports', reports);
-    if (s.has && window.__pgAdd) {
-      const m = s.auto ? Math.max(0, Number(r.actual) || 0) : 0, p = s.pr || 0;
-      if (m + p > 0) window.__pgAdd(r.fpnr, s.series, m, p);
-    }
-    $('repPr').value = 0;
+    if (s.has && window.__pgAdd && s.mont + s.pr > 0) window.__pgAdd(r.fpnr, s.series, s.mont, s.pr);
+    $('repMont').value = 0; $('repPr').value = 0;
     fillRepSer(); renderTrack();
   });
 
