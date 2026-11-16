@@ -112,7 +112,7 @@ async function hashWithSaltP0(user, pass) { return await sha256(user, pass + CFG
 async function hashOldP0(user, pass) { return await sha256(user, pass); }
 
 function autoIdP0() {
-  if (document.getElementById('newLeadUser')) return true;
+  if (document.getElementById('newUsername')) return true;
   const allInputs = [...document.querySelectorAll('input')];
   const title = [...document.querySelectorAll('*')].find(el => el.children.length === 0 && (el.textContent || '').includes('Tài khoản Team Lead'));
   if (!title) return false;
@@ -120,14 +120,14 @@ function autoIdP0() {
   for (let i = 0; i < 4 && box; i++) {
     const ins = box.querySelectorAll('input');
     if (ins.length >= 2) {
-      if (!ins[0].id) ins[0].id = 'newLeadUser';
-      if (!ins[1].id) ins[1].id = 'newLeadPass';
+      if (!ins[0].id) ins[0].id = 'newUsername';
+      if (!ins[1].id) ins[1].id = 'newPassword';
       return true;
     }
     box = box.parentElement;
   }
   const byPlace = allInputs.filter(el => (el.placeholder || '').includes('Tên tài khoản') || (el.placeholder || '').includes('Mật khẩu'));
-  if (byPlace.length >= 2) { byPlace[0].id = 'newLeadUser'; byPlace[1].id = 'newLeadPass'; return true; }
+  if (byPlace.length >= 2) { byPlace[0].id = 'newUsername'; byPlace[1].id = 'newPassword'; return true; }
   return false;
 }
 
@@ -217,8 +217,8 @@ document.getElementById('btnSync')?.addEventListener('click', () => pullReportsP
   function tryHook() {
     if (hooked) return;
     autoIdP0();
-    const userEl = document.getElementById('newLeadUser');
-    const passEl = document.getElementById('newLeadPass');
+    const userEl = document.getElementById('newUsername');
+    const passEl = document.getElementById('newPassword');
     const btn = [...document.querySelectorAll('button')].find(b => (b.textContent || '').trim() === 'Thêm Team Lead');
     if (!userEl || !passEl || !btn) return;
     hooked = true;
